@@ -1,0 +1,117 @@
+export type Role = "User" | "Manager" | "Admin";
+export type ThemeMode = "light" | "dark";
+export type EntryStatus = "Draft" | "Submitted" | "Reviewed";
+
+export type AppUser = {
+  fullName: string;
+  username: string;
+  email: string;
+  role: Role;
+  active: boolean;
+  projects: string[];
+};
+
+export type ParticipantLine = {
+  categoryKey: string;
+  categoryLabel: string;
+  male: number;
+  female: number;
+};
+
+export type AttachmentCategory =
+  | "Implementation Plan"
+  | "Participants List"
+  | "Press Release"
+  | "Activity Report"
+  | "Bill Voucher"
+  | "Photos";
+
+export type ActivityAttachment = {
+  id: string;
+  category: AttachmentCategory;
+  name: string;
+  url: string;
+  type: "image" | "document";
+  sizeKb: number;
+};
+
+export type ActivityEntry = {
+  uniqueId: string;
+  status: EntryStatus;
+  date: string;
+  project: string;
+  activityName: string;
+  activityType: string;
+  activityCode: string;
+  venue: string;
+  district: string;
+  upazila: string;
+  union: string;
+  implementedBy: string;
+  participants: ParticipantLine[];
+  totalMale: number;
+  totalFemale: number;
+  grandTotal: number;
+  totalBudget: number;
+  totalExpenses: number;
+  variance: number;
+  referenceLink: string;
+  notes: string;
+  aiReport: string;
+  attachments: ActivityAttachment[];
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  submittedAt?: string;
+  reviewedBy?: string;
+  reviewedAt?: string;
+};
+
+export type ProjectActivityMap = {
+  project: string;
+  activities: Array<{ name: string; code: string; type: string }>;
+  participantCategories: Array<{ key: string; label: string }>;
+};
+
+export type LocationMap = {
+  district: string;
+  upazilas: Array<{
+    name: string;
+    unions: string[];
+  }>;
+};
+
+export type LoginLog = {
+  username: string;
+  loginTime: string;
+  logoutTime: string;
+  ipAddress: string;
+  deviceInfo: string;
+  status: "Success" | "Failed";
+};
+
+export type AuditLog = {
+  actor: string;
+  role: Role;
+  action: string;
+  module: string;
+  targetId: string;
+  timestamp: string;
+  notes: string;
+};
+
+export type AppNotification = {
+  id: string;
+  title: string;
+  summary: string;
+  at: string;
+  unread: boolean;
+  entryId?: string;
+};
+
+export type DashboardMetrics = {
+  totalActivities: number;
+  totalParticipants: number;
+  totalBudget: number;
+  projects: number;
+};
