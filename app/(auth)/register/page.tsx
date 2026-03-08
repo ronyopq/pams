@@ -1,23 +1,28 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { projectActivityMap } from "@/lib/mockData";
 import { useAppContext } from "@/components/providers/app-context";
 
 export default function RegisterPage() {
-  const { register } = useAppContext();
+  const { register, projectMap } = useAppContext();
   const router = useRouter();
   const [form, setForm] = useState({
     fullName: "",
     username: "",
     email: "",
-    project: projectActivityMap[0]?.project ?? "",
+    project: "",
     password: "",
     confirm: ""
   });
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!form.project && projectMap[0]?.project) {
+      setForm((prev) => ({ ...prev, project: projectMap[0].project }));
+    }
+  }, [form.project, projectMap]);
 
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -82,17 +87,20 @@ export default function RegisterPage() {
               />
             </div>
             <div className="col-md-6">
-              <label className="form-label">Project</label>
-              <select
-                className="form-select premium-input"
-                value={form.project}
-                onChange={(e) => setForm((prev) => ({ ...prev, project: e.target.value }))}
-              >
-                {projectActivityMap.map((item) => (
-                  <option key={item.project}>{item.project}</option>
-                ))}
-              </select>
-            </div>
+                <label className="form-label">Project</label>
+                <select
+                  className="form-select premium-input"
+                  value={form.project}
+                  onChange={(e) => setForm((prev) => ({ ...prev, project: e.target.value }))}
+                >
+                  {!projectMap.length && <option value="">No project available</option>}
+                  {projectMap.map((item) => (
+                    <option key={item.project} value={item.project}>
+                      {item.project}
+                    </option>
+                  ))}
+                </select>
+              </div>
             <div className="col-md-6">
               <label className="form-label">Password</label>
               <input

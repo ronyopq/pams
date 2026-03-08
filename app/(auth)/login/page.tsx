@@ -1,18 +1,23 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useAppContext } from "@/components/providers/app-context";
 
 export default function LoginPage() {
   const router = useRouter();
-  const params = useSearchParams();
   const { login } = useAppContext();
   const [username, setUsername] = useState("admin");
   const [password, setPassword] = useState("123456");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [nextPath, setNextPath] = useState("/dashboard");
+
+  useEffect(() => {
+    const query = new URLSearchParams(window.location.search);
+    setNextPath(query.get("next") || "/dashboard");
+  }, []);
 
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -26,7 +31,6 @@ export default function LoginPage() {
       return;
     }
 
-    const nextPath = params.get("next") || "/dashboard";
     router.push(nextPath);
   };
 

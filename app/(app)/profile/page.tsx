@@ -30,7 +30,7 @@ export default function ProfilePage() {
             <p className="text-muted mb-1">Project Access</p>
             <div className="d-flex flex-wrap gap-2">
               {user?.projects.map((project) => (
-                <span className="badge text-bg-light" key={project}>
+                <span className="soft-badge" key={project}>
                   {project}
                 </span>
               ))}

@@ -23,7 +23,7 @@ export default function FilesPage() {
     return list.filter((file) =>
       !needle
         ? true
-        : normalizeText(`${file.name} ${file.category} ${file.entryId} ${file.project} - {file.activity}`).includes(
+        : normalizeText(`${file.name} ${file.category} ${file.entryId} ${file.project} - ${file.activity}`).includes(
             needle
           )
     );
@@ -52,11 +52,20 @@ export default function FilesPage() {
         {files.map((file) => (
           <article key={file.id + file.entryId} className="panel-card d-grid gap-2">
             <div className="d-flex justify-content-between align-items-start gap-2">
-              <div>
+              <div className="d-flex gap-2 align-items-start">
+                <span className="file-thumb">
+                  {file.type === "image" && file.url !== "#" ? (
+                    <img src={file.url} alt={file.name} />
+                  ) : (
+                    <i className={`bi ${file.type === "image" ? "bi-image" : "bi-file-earmark-text"}`} />
+                  )}
+                </span>
+                <div>
                 <p className="mb-1 fw-semibold text-truncate maxw-220">{file.name}</p>
                 <small className="text-muted">{file.category}</small>
+                </div>
               </div>
-              <span className="badge text-bg-light">{Math.max(1, file.sizeKb)} KB</span>
+              <span className="soft-badge">{Math.max(1, file.sizeKb)} KB</span>
             </div>
 
             <small className="text-muted">

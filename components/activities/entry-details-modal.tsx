@@ -42,6 +42,9 @@ export const EntryDetailsModal = ({ entry, onClose }: Props) => {
             <button className="outline-btn">
               <i className="bi bi-file-earmark-pdf" /> Export PDF
             </button>
+            <button className="outline-btn" onClick={() => window.print()}>
+              <i className="bi bi-printer" /> Print
+            </button>
             <button className="icon-btn" onClick={onClose} aria-label="Close details">
               <i className="bi bi-x-lg" />
             </button>
@@ -188,7 +191,11 @@ export const EntryDetailsModal = ({ entry, onClose }: Props) => {
                   <article key={file.id} className="attachment-item">
                     <div className="d-flex align-items-center gap-3">
                       <div className="file-thumb">
-                        <i className={`bi ${file.type === "image" ? "bi-image" : "bi-file-earmark-text"}`} />
+                        {file.type === "image" && file.url !== "#" ? (
+                          <img src={file.url} alt={file.name} />
+                        ) : (
+                          <i className={`bi ${file.type === "image" ? "bi-image" : "bi-file-earmark-text"}`} />
+                        )}
                       </div>
                       <div>
                         <p className="mb-0 fw-semibold">{file.name}</p>

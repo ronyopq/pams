@@ -1,5 +1,11 @@
 export type Role = "User" | "Manager" | "Admin";
-export type ThemeMode = "light" | "dark";
+export type ThemeMode =
+  | "corporate-light"
+  | "corporate-dark"
+  | "emerald"
+  | "violet"
+  | "sunset"
+  | "mono";
 export type EntryStatus = "Draft" | "Submitted" | "Reviewed";
 
 export type AppUser = {
@@ -73,12 +79,35 @@ export type ProjectActivityMap = {
   participantCategories: Array<{ key: string; label: string }>;
 };
 
+export type OrgSettings = {
+  orgName: string;
+  logoUrl: string;
+};
+
 export type LocationMap = {
   district: string;
   upazilas: Array<{
     name: string;
     unions: string[];
   }>;
+};
+
+export type PrintSetup = {
+  preset: string;
+  pageSize: string;
+  orientation: "Portrait" | "Landscape";
+  header: string;
+  footer: string;
+};
+
+export type ReportSettings = {
+  defaultTheme: string;
+  templateName: string;
+  enableDocx: boolean;
+  enablePdf: boolean;
+  enableCsv: boolean;
+  enableZip: boolean;
+  printSetup: PrintSetup;
 };
 
 export type LoginLog = {

@@ -36,7 +36,7 @@ const adminNav: NavItem[] = [
   { href: "/files", label: "Files", icon: "bi-folder" },
   { href: "/notifications", label: "Notifications", icon: "bi-bell" },
   { href: "/logs/user", label: "User Log", icon: "bi-list-ul" },
-  { href: "/admin", label: "Admin", icon: "bi-gear" },
+  { href: "/admin", label: "Settings", icon: "bi-sliders" },
   { href: "/profile", label: "Profile", icon: "bi-person" }
 ];
 

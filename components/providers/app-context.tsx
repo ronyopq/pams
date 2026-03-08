@@ -1,10 +1,31 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { entries as defaultEntries, notifications as defaultNotifications, users } from "@/lib/mockData";
+import {
+  entries as defaultEntries,
+  implementedByOptions as defaultImplementedByOptions,
+  locations as defaultLocations,
+  notifications as defaultNotifications,
+  orgSettings as defaultOrgSettings,
+  projectActivityMap as defaultProjectMap,
+  reportSettings as defaultReportSettings,
+  users as defaultUsers,
+  venueOptions as defaultVenueOptions
+} from "@/lib/mockData";
 import { calcVariance } from "@/lib/format";
 import { getPersistedState, savePersistedState, visibleEntries } from "@/lib/store";
-import { ActivityEntry, AppNotification, AppUser, EntryStatus, Role, ThemeMode } from "@/lib/types";
+import {
+  ActivityEntry,
+  AppNotification,
+  AppUser,
+  EntryStatus,
+  LocationMap,
+  OrgSettings,
+  ProjectActivityMap,
+  ReportSettings,
+  Role,
+  ThemeMode
+} from "@/lib/types";
 
 type RegisterInput = {
   fullName: string;
@@ -15,15 +36,30 @@ type RegisterInput = {
 
 type AppContextValue = {
   user: AppUser | null;
+  users: AppUser[];
   theme: ThemeMode;
+  setTheme: (theme: ThemeMode) => void;
   language: "en" | "bn";
   entries: ActivityEntry[];
   notifications: AppNotification[];
+  projectMap: ProjectActivityMap[];
+  locationMap: LocationMap[];
+  implementedByOptions: string[];
+  venueOptions: string[];
+  orgSettings: OrgSettings;
+  reportSettings: ReportSettings;
   login: (username: string, password: string) => { ok: boolean; message?: string };
   register: (input: RegisterInput) => { ok: boolean; message?: string };
   logout: () => void;
   toggleTheme: () => void;
   toggleLanguage: () => void;
+  setUsers: (users: AppUser[]) => void;
+  setProjectMap: (map: ProjectActivityMap[]) => void;
+  setLocationMap: (map: LocationMap[]) => void;
+  setImplementedByOptions: (list: string[]) => void;
+  setVenueOptions: (list: string[]) => void;
+  setOrgSettings: (settings: OrgSettings) => void;
+  setReportSettings: (settings: ReportSettings) => void;
   addEntry: (entry: ActivityEntry) => void;
   updateEntryStatus: (id: string, status: EntryStatus) => void;
   markNotificationRead: (id: string) => void;
@@ -34,30 +70,105 @@ type AppContextValue = {
 const SESSION_KEY = "praan_session_user";
 const THEME_KEY = "praan_theme";
 const LANGUAGE_KEY = "praan_lang";
+const AVAILABLE_THEMES: ThemeMode[] = [
+  "corporate-light",
+  "corporate-dark",
+  "emerald",
+  "violet",
+  "sunset",
+  "mono"
+];
 
 const AppContext = createContext<AppContextValue | undefined>(undefined);
 
+const cloneUsers = (list: AppUser[]): AppUser[] =>
+  list.map((item) => ({
+    ...item,
+    projects: [...item.projects]
+  }));
+
+const cloneProjectMap = (map: ProjectActivityMap[]): ProjectActivityMap[] =>
+  map.map((item) => ({
+    project: item.project,
+    activities: item.activities.map((activity) => ({ ...activity })),
+    participantCategories: item.participantCategories.map((category) => ({ ...category }))
+  }));
+
+const cloneLocationMap = (map: LocationMap[]): LocationMap[] =>
+  map.map((item) => ({
+    district: item.district,
+    upazilas: item.upazilas.map((upazila) => ({
+      name: upazila.name,
+      unions: [...upazila.unions]
+    }))
+  }));
+
+const cloneOrgSettings = (settings: OrgSettings): OrgSettings => ({
+  orgName: settings.orgName,
+  logoUrl: settings.logoUrl
+});
+
+const cloneReportSettings = (settings: ReportSettings): ReportSettings => ({
+  defaultTheme: settings.defaultTheme,
+  templateName: settings.templateName,
+  enableDocx: settings.enableDocx,
+  enablePdf: settings.enablePdf,
+  enableCsv: settings.enableCsv,
+  enableZip: settings.enableZip,
+  printSetup: {
+    preset: settings.printSetup.preset,
+    pageSize: settings.printSetup.pageSize,
+    orientation: settings.printSetup.orientation,
+    header: settings.printSetup.header,
+    footer: settings.printSetup.footer
+  }
+});
+
+const isSameUser = (a: AppUser, b: AppUser) =>
+  a.fullName === b.fullName &&
+  a.email === b.email &&
+  a.role === b.role &&
+  a.active === b.active &&
+  a.projects.length === b.projects.length &&
+  a.projects.every((project, index) => project === b.projects[index]);
+
 export const AppContextProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<AppUser | null>(null);
-  const [theme, setTheme] = useState<ThemeMode>("light");
+  const [users, setUsersState] = useState<AppUser[]>(cloneUsers(defaultUsers));
+  const [theme, setThemeState] = useState<ThemeMode>("corporate-light");
   const [language, setLanguage] = useState<"en" | "bn">("en");
   const [entries, setEntries] = useState<ActivityEntry[]>(defaultEntries);
   const [notifications, setNotifications] = useState<AppNotification[]>(defaultNotifications);
+  const [projectMap, setProjectMapState] = useState<ProjectActivityMap[]>(cloneProjectMap(defaultProjectMap));
+  const [locationMap, setLocationMapState] = useState<LocationMap[]>(cloneLocationMap(defaultLocations));
+  const [implementedByOptions, setImplementedByOptionsState] = useState<string[]>([...defaultImplementedByOptions]);
+  const [venueOptions, setVenueOptionsState] = useState<string[]>([...defaultVenueOptions]);
+  const [orgSettings, setOrgSettingsState] = useState<OrgSettings>(cloneOrgSettings(defaultOrgSettings));
+  const [reportSettings, setReportSettingsState] = useState<ReportSettings>(cloneReportSettings(defaultReportSettings));
 
   useEffect(() => {
     const state = getPersistedState();
     setEntries(state.entries);
     setNotifications(state.notifications);
+    setUsersState(cloneUsers(state.users));
+    setProjectMapState(cloneProjectMap(state.projectMap));
+    setLocationMapState(cloneLocationMap(state.locationMap));
+    setImplementedByOptionsState([...state.implementedByOptions]);
+    setVenueOptionsState([...state.venueOptions]);
+    setOrgSettingsState(cloneOrgSettings(state.orgSettings));
+    setReportSettingsState(cloneReportSettings(state.reportSettings));
 
     const storedUsername = window.localStorage.getItem(SESSION_KEY);
     if (storedUsername) {
-      const found = users.find((u) => u.username === storedUsername);
+      const found = state.users.find((item) => item.username === storedUsername);
       if (found && found.active) setUser(found);
     }
 
-    const storedTheme = window.localStorage.getItem(THEME_KEY) as ThemeMode | null;
-    if (storedTheme === "dark" || storedTheme === "light") {
-      setTheme(storedTheme);
+    const storedTheme = window.localStorage.getItem(THEME_KEY) as ThemeMode | "dark" | "light" | null;
+    if (storedTheme === "dark") setThemeState("corporate-dark");
+    else if (storedTheme === "light") setThemeState("corporate-light");
+    else if (storedTheme && AVAILABLE_THEMES.includes(storedTheme as ThemeMode)) {
+      setThemeState(storedTheme as ThemeMode);
     }
 
     const storedLang = window.localStorage.getItem(LANGUAGE_KEY);
@@ -65,8 +176,28 @@ export const AppContextProvider = ({ children }: { children: React.ReactNode }) 
   }, []);
 
   useEffect(() => {
-    savePersistedState({ entries, notifications });
-  }, [entries, notifications]);
+    savePersistedState({
+      entries,
+      notifications,
+      users,
+      projectMap,
+      locationMap,
+      implementedByOptions,
+      venueOptions,
+      orgSettings,
+      reportSettings
+    });
+  }, [
+    entries,
+    notifications,
+    users,
+    projectMap,
+    locationMap,
+    implementedByOptions,
+    venueOptions,
+    orgSettings,
+    reportSettings
+  ]);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -77,6 +208,19 @@ export const AppContextProvider = ({ children }: { children: React.ReactNode }) 
     document.documentElement.setAttribute("lang", language);
     window.localStorage.setItem(LANGUAGE_KEY, language);
   }, [language]);
+
+  useEffect(() => {
+    if (!user) return;
+    const latest = users.find((item) => item.username === user.username);
+    if (!latest || !latest.active) {
+      setUser(null);
+      window.localStorage.removeItem(SESSION_KEY);
+      return;
+    }
+    if (!isSameUser(latest, user)) {
+      setUser(latest);
+    }
+  }, [users, user]);
 
   const login = (username: string, password: string) => {
     const found = users.find((item) => item.username.toLowerCase() === username.trim().toLowerCase());
@@ -90,19 +234,20 @@ export const AppContextProvider = ({ children }: { children: React.ReactNode }) 
   };
 
   const register = (input: RegisterInput) => {
-    const exists = users.some((u) => u.username.toLowerCase() === input.username.toLowerCase());
+    const exists = users.some((item) => item.username.toLowerCase() === input.username.toLowerCase());
     if (exists) return { ok: false, message: "Username already exists" };
 
+    const selectedProject = input.project || projectMap[0]?.project || "";
     const newUser: AppUser = {
       fullName: input.fullName,
       username: input.username,
       email: input.email,
       role: "User",
       active: true,
-      projects: [input.project]
+      projects: selectedProject ? [selectedProject] : []
     };
 
-    users.push(newUser);
+    setUsersState((prev) => [...prev, newUser]);
     setUser(newUser);
     window.localStorage.setItem(SESSION_KEY, newUser.username);
     return { ok: true };
@@ -114,11 +259,44 @@ export const AppContextProvider = ({ children }: { children: React.ReactNode }) 
   };
 
   const toggleTheme = () => {
-    setTheme((prev) => (prev === "light" ? "dark" : "light"));
+    setThemeState((prev) => (prev === "corporate-dark" ? "corporate-light" : "corporate-dark"));
+  };
+
+  const setTheme = (nextTheme: ThemeMode) => {
+    if (!AVAILABLE_THEMES.includes(nextTheme)) return;
+    setThemeState(nextTheme);
   };
 
   const toggleLanguage = () => {
     setLanguage((prev) => (prev === "en" ? "bn" : "en"));
+  };
+
+  const setUsers = (nextUsers: AppUser[]) => {
+    setUsersState(cloneUsers(nextUsers));
+  };
+
+  const setProjectMap = (nextMap: ProjectActivityMap[]) => {
+    setProjectMapState(cloneProjectMap(nextMap));
+  };
+
+  const setLocationMap = (nextMap: LocationMap[]) => {
+    setLocationMapState(cloneLocationMap(nextMap));
+  };
+
+  const setImplementedByOptions = (list: string[]) => {
+    setImplementedByOptionsState(list.filter((item, index) => item.trim() && list.indexOf(item) === index));
+  };
+
+  const setVenueOptions = (list: string[]) => {
+    setVenueOptionsState(list.filter((item, index) => item.trim() && list.indexOf(item) === index));
+  };
+
+  const setOrgSettings = (settings: OrgSettings) => {
+    setOrgSettingsState(cloneOrgSettings(settings));
+  };
+
+  const setReportSettings = (settings: ReportSettings) => {
+    setReportSettingsState(cloneReportSettings(settings));
   };
 
   const addEntry = (entry: ActivityEntry) => {
@@ -168,15 +346,30 @@ export const AppContextProvider = ({ children }: { children: React.ReactNode }) 
     <AppContext.Provider
       value={{
         user,
+        users,
         theme,
+        setTheme,
         language,
         entries,
         notifications,
+        projectMap,
+        locationMap,
+        implementedByOptions,
+        venueOptions,
+        orgSettings,
+        reportSettings,
         login,
         register,
         logout,
         toggleTheme,
         toggleLanguage,
+        setUsers,
+        setProjectMap,
+        setLocationMap,
+        setImplementedByOptions,
+        setVenueOptions,
+        setOrgSettings,
+        setReportSettings,
         addEntry,
         updateEntryStatus,
         markNotificationRead,

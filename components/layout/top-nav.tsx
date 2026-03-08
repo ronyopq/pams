@@ -1,82 +1,145 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import clsx from "clsx";
 import { getNavByRole } from "@/lib/navigation";
 import { useAppContext } from "@/components/providers/app-context";
 
+const isActivePath = (pathname: string, href: string) => {
+  const routePath = href.split("#")[0];
+  if (routePath === "/dashboard") return pathname === "/dashboard";
+  return pathname === routePath || pathname.startsWith(`${routePath}/`);
+};
+
+const mobileTabs = [
+  { href: "/dashboard", label: "Home", icon: "bi-house" },
+  { href: "/activities/new", label: "New", icon: "bi-plus-circle" },
+  { href: "/activities", label: "Activities", icon: "bi-clipboard-data" },
+  { href: "/files", label: "Files", icon: "bi-folder" }
+];
+
 export const TopNav = () => {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, toggleTheme, theme, language, toggleLanguage, unreadCount, logout } = useAppContext();
+  const { user, toggleTheme, theme, language, toggleLanguage, unreadCount, logout, orgSettings } = useAppContext();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   if (!user) return null;
 
   const navItems = getNavByRole(user.role);
-
   return (
-    <header className="topbar">
-      <div className="container-xxl topbar-inner">
-        <Link href="/dashboard" className="brand-wrap text-decoration-none">
-          <span className="brand-logo">P</span>
-          <span>
-            <strong className="brand-name">PRAAN</strong>
-            <span className="brand-sub">Activity Manager</span>
-          </span>
-        </Link>
+    <>
+      <aside className={clsx("side-nav", mobileOpen && "open")}>
+        <div className="side-brand">
+          <Link href="/dashboard" className="side-brand-link" onClick={() => setMobileOpen(false)}>
+            <span className="brand-logo">P</span>
+            <span>
+              <strong className="brand-name">{orgSettings.orgName}</strong>
+              <span className="brand-sub">Activity Manager</span>
+            </span>
+          </Link>
+          <button className="icon-btn side-close" onClick={() => setMobileOpen(false)} aria-label="Close menu">
+            <i className="bi bi-x-lg" />
+          </button>
+        </div>
 
-        <nav className="topbar-nav" aria-label="Main">
-          {navItems.slice(0, 8).map((item) => (
+        <nav className="side-menu" aria-label="Primary menu">
+          {navItems.map((item) => (
             <Link
               key={item.href + item.label}
               href={item.href}
-              className={clsx("nav-pill", pathname === item.href && "active")}
+              onClick={() => setMobileOpen(false)}
+              className={clsx("side-link", isActivePath(pathname, item.href) && "active")}
             >
               <i className={`bi ${item.icon}`} />
-              {item.label}
+              <span>{item.label}</span>
+              {item.href === "/notifications" && unreadCount > 0 && <span className="notif-inline">{unreadCount}</span>}
             </Link>
           ))}
         </nav>
 
-        <div className="topbar-actions">
-          <button className="icon-btn" onClick={toggleTheme} aria-label="Toggle theme">
-            <i className={`bi ${theme === "light" ? "bi-moon" : "bi-brightness-high"}`} />
-          </button>
+        <div className="side-footer">
+          <div className="d-flex gap-2">
+            <button className="icon-btn" onClick={toggleTheme} aria-label="Toggle theme">
+              <i className={`bi ${theme === "corporate-dark" ? "bi-brightness-high" : "bi-moon"}`} />
+            </button>
+            <button className="outline-btn flex-grow-1" onClick={toggleLanguage}>
+              {language === "en" ? "Bangla" : "English"}
+            </button>
+            <button className="icon-btn" onClick={() => window.print()} aria-label="Print report">
+              <i className="bi bi-printer" />
+            </button>
+            {(user.role === "Admin" || user.role === "Manager") && (
+              <Link href="/notifications" className="icon-btn text-decoration-none position-relative">
+                <i className="bi bi-bell" />
+                {unreadCount > 0 && <span className="notif-dot">{unreadCount}</span>}
+              </Link>
+            )}
+          </div>
 
-          <button className="outline-btn" onClick={toggleLanguage}>
-            {language === "en" ? "Bangla" : "English"}
-          </button>
+          <div className="side-profile">
+            <span className="avatar">{user.fullName.charAt(0).toUpperCase()}</span>
+            <div className="side-profile-meta">
+              <strong>{user.fullName}</strong>
+              <small>{user.role}</small>
+            </div>
+            <button
+              className="danger-outline"
+              onClick={() => {
+                logout();
+                router.push("/login");
+              }}
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+      </aside>
 
+      <header className="mobile-topbar">
+        <button className="icon-btn" onClick={() => setMobileOpen(true)} aria-label="Open menu">
+          <i className="bi bi-list" />
+        </button>
+        <Link href="/dashboard" className="mobile-brand-link">
+          <span className="brand-logo">P</span>
+          <strong className="brand-name">{orgSettings.orgName}</strong>
+        </Link>
+        <div className="d-flex gap-2">
           {(user.role === "Admin" || user.role === "Manager") && (
-            <Link href="/notifications" className="icon-btn text-decoration-none position-relative" aria-label="Notifications">
+            <Link href="/notifications" className="icon-btn text-decoration-none position-relative">
               <i className="bi bi-bell" />
               {unreadCount > 0 && <span className="notif-dot">{unreadCount}</span>}
             </Link>
           )}
-
-          <details className="profile-menu">
-            <summary>
-              <span className="avatar">{user.fullName.charAt(0).toUpperCase()}</span>
-              <span className="profile-name">{user.fullName}</span>
-              <i className="bi bi-chevron-down" />
-            </summary>
-            <div className="profile-card">
-              <p className="small text-muted mb-1">{user.username}</p>
-              <p className="mb-2 fw-semibold">Role: {user.role}</p>
-              <button
-                className="danger-outline"
-                onClick={() => {
-                  logout();
-                  router.push("/login");
-                }}
-              >
-                Logout
-              </button>
-            </div>
-          </details>
+          <button className="icon-btn" onClick={() => window.print()} aria-label="Print report">
+            <i className="bi bi-printer" />
+          </button>
+          <button className="icon-btn" onClick={toggleTheme} aria-label="Toggle theme">
+            <i className={`bi ${theme === "corporate-dark" ? "bi-brightness-high" : "bi-moon"}`} />
+          </button>
         </div>
-      </div>
-    </header>
+      </header>
+
+      <button
+        className={clsx("mobile-overlay", mobileOpen && "show")}
+        onClick={() => setMobileOpen(false)}
+        aria-label="Close menu overlay"
+      />
+
+      <nav className="mobile-bottom-nav" aria-label="Mobile tab navigation">
+        {mobileTabs.map((tab) => (
+          <Link key={tab.href} href={tab.href} className={clsx("mobile-tab", isActivePath(pathname, tab.href) && "active")}>
+            <i className={`bi ${tab.icon}`} />
+            <span>{tab.label}</span>
+          </Link>
+        ))}
+        <button className="mobile-tab" onClick={() => setMobileOpen(true)}>
+          <i className="bi bi-grid" />
+          <span>Menu</span>
+        </button>
+      </nav>
+    </>
   );
 };

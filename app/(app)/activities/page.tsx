@@ -98,6 +98,9 @@ export default function ActivitiesPage() {
         </div>
         <div className="d-flex gap-2 align-items-center">
           <button className="outline-btn">Bangla</button>
+          <button className="outline-btn" onClick={() => window.print()}>
+            <i className="bi bi-printer" /> Print Report
+          </button>
           <button className="primary-btn" onClick={exportCsv}>
             <i className="bi bi-download" /> Export CSV
           </button>
