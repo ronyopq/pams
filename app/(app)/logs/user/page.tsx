@@ -1,11 +1,10 @@
 "use client";
 
 import { useAppContext } from "@/components/providers/app-context";
-import { auditLogs } from "@/lib/mockData";
 import { formatDateTime } from "@/lib/format";
 
 export default function UserLogPage() {
-  const { user } = useAppContext();
+  const { user, auditLogs } = useAppContext();
 
   if (user?.role === "User") {
     return (
@@ -32,6 +31,8 @@ export default function UserLogPage() {
               <th>Action</th>
               <th>Module</th>
               <th>Target</th>
+              <th>Device</th>
+              <th>Browser</th>
               <th>Timestamp</th>
               <th>Notes</th>
             </tr>
@@ -44,6 +45,8 @@ export default function UserLogPage() {
                 <td>{log.action}</td>
                 <td>{log.module}</td>
                 <td className="mono">{log.targetId}</td>
+                <td>{log.device}</td>
+                <td>{log.browser}</td>
                 <td>{formatDateTime(log.timestamp)}</td>
                 <td>{log.notes}</td>
               </tr>

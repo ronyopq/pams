@@ -115,7 +115,8 @@ export type LoginLog = {
   loginTime: string;
   logoutTime: string;
   ipAddress: string;
-  deviceInfo: string;
+  device: string;
+  browser: string;
   status: "Success" | "Failed";
 };
 
@@ -126,6 +127,8 @@ export type AuditLog = {
   module: string;
   targetId: string;
   timestamp: string;
+  device: string;
+  browser: string;
   notes: string;
 };
 

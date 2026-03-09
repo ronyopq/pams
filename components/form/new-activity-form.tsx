@@ -2,6 +2,7 @@
 
 import { FormEvent, useMemo, useState } from "react";
 import clsx from "clsx";
+import { useRouter } from "next/navigation";
 import { useAppContext } from "@/components/providers/app-context";
 import { calcUtilization, calcVariance, formatCurrency } from "@/lib/format";
 import { ActivityAttachment, ActivityEntry, AttachmentCategory, EntryStatus, ParticipantLine, ProjectActivityMap } from "@/lib/types";
@@ -55,7 +56,8 @@ const buildId = (entries: ActivityEntry[], dateValue: string) => {
 };
 
 export const NewActivityForm = () => {
-  const { user, entries, addEntry, projectMap, locationMap, venueOptions, implementedByOptions, setVenueOptions, setImplementedByOptions } = useAppContext();
+  const router = useRouter();
+  const { user, entries, addEntry, projectMap, locationMap, venueOptions, implementedByOptions, setVenueOptions, setImplementedByOptions, notify } = useAppContext();
   const [form, setForm] = useState<FormState>({ date: todayIso, project: "", activityName: "", activityCode: "", activityType: "", venue: "", implementedBy: "", district: "", upazila: "", union: "", referenceLink: "", notes: "", aiReport: "", budget: "", expenses: "" });
   const [participants, setParticipants] = useState<ParticipantLine[]>([]);
   const [filesByCategory, setFilesByCategory] = useState<Record<AttachmentCategory, UploadedItem[]>>({ "Implementation Plan": [], "Participants List": [], "Press Release": [], "Activity Report": [], "Bill Voucher": [], Photos: [] });
@@ -100,8 +102,20 @@ export const NewActivityForm = () => {
     });
     setConfirmed(false);
   };
-  const onSaveDraft = () => { if (savingDraft) return; setSavingDraft(true); const entry = buildEntry("Draft"); addEntry(entry); setTimeout(() => { setSavingDraft(false); window.alert(`Draft saved: ${entry.uniqueId}`); }, 400); };
-  const onSubmit = (event: FormEvent) => { event.preventDefault(); if (!confirmed || submitting) return; setSubmitting(true); const entry = buildEntry("Submitted"); addEntry(entry); setTimeout(() => { setSubmitting(false); setSuccessEntry(entry); reset(); }, 1100); };
+  const onSaveDraft = () => { if (savingDraft) return; setSavingDraft(true); const entry = buildEntry("Draft"); addEntry(entry); setTimeout(() => { setSavingDraft(false); notify(`Draft saved: ${entry.uniqueId}`, "success"); }, 400); };
+  const onSubmit = (event: FormEvent) => {
+    event.preventDefault();
+    if (!confirmed || submitting) return;
+    setSubmitting(true);
+    const entry = buildEntry("Submitted");
+    addEntry(entry);
+    setTimeout(() => {
+      setSubmitting(false);
+      setSuccessEntry(entry);
+      reset();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }, 1100);
+  };
 
   return (
     <>
@@ -115,7 +129,13 @@ export const NewActivityForm = () => {
       )}
       {successEntry && (
         <div className="modal-overlay">
-          <div className="success-modal">
+          <div className="success-modal success-modal-glitter">
+            <button className="icon-btn success-close-btn" onClick={() => setSuccessEntry(null)} aria-label="Close">
+              <i className="bi bi-x-lg" />
+            </button>
+            <div className="success-burst" aria-hidden="true">
+              <i className="bi bi-check2-circle" />
+            </div>
             <h3 className="mb-2">Activity Submitted Successfully</h3>
             <p className="text-muted mb-3">Unique ID: {successEntry.uniqueId}</p>
             <div className="success-grid">
@@ -126,7 +146,21 @@ export const NewActivityForm = () => {
               <div><small>Total Files</small><p>{successEntry.attachments.length}</p></div>
               <div><small>Total Photos</small><p>{successEntry.attachments.filter((item) => item.category === "Photos").length}</p></div>
             </div>
-            <button className="primary-btn w-100" onClick={() => setSuccessEntry(null)}>Continue</button>
+            <div className="d-grid gap-2">
+              <button className="primary-btn w-100" onClick={() => setSuccessEntry(null)}>
+                New Entry
+              </button>
+              <button
+                className="outline-btn w-100"
+                onClick={() => {
+                  const entryId = successEntry.uniqueId;
+                  setSuccessEntry(null);
+                  router.push(`/activities?entry=${encodeURIComponent(entryId)}`);
+                }}
+              >
+                View Entry
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -216,23 +250,24 @@ export const NewActivityForm = () => {
                   {!!participants.length && (
                     <>
                       <div className="participant-table participant-desktop">
-                        <div className="participant-head"><span>Category</span><span>Male</span><span>Female</span></div>
+                        <div className="participant-head"><span>Category</span><span>Male</span><span>Female</span><span>Total</span></div>
                         {participants.map((row) => (
                           <div key={row.categoryKey} className="participant-row">
                             <div className="participant-label"><span className="dot" /> {row.categoryLabel}</div>
                             <div className="counter-group">
-                              <button type="button" className="counter-btn" onClick={() => updateCount(row.categoryKey, "male", row.male - 1)}>-</button>
-                              <input className="counter-input" type="number" min={0} value={row.male} onChange={(e) => updateCount(row.categoryKey, "male", Number(e.target.value || 0))} />
-                              <button type="button" className="counter-btn" onClick={() => updateCount(row.categoryKey, "male", row.male + 1)}>+</button>
+                              <button tabIndex={-1} type="button" className="counter-btn" onClick={() => updateCount(row.categoryKey, "male", row.male - 1)}>-</button>
+                              <input className="counter-input" type="number" min={0} value={row.male} onFocus={(e) => e.currentTarget.select()} onChange={(e) => updateCount(row.categoryKey, "male", Number(e.target.value || 0))} />
+                              <button tabIndex={-1} type="button" className="counter-btn" onClick={() => updateCount(row.categoryKey, "male", row.male + 1)}>+</button>
                             </div>
                             <div className="counter-group">
-                              <button type="button" className="counter-btn" onClick={() => updateCount(row.categoryKey, "female", row.female - 1)}>-</button>
-                              <input className="counter-input" type="number" min={0} value={row.female} onChange={(e) => updateCount(row.categoryKey, "female", Number(e.target.value || 0))} />
-                              <button type="button" className="counter-btn" onClick={() => updateCount(row.categoryKey, "female", row.female + 1)}>+</button>
+                              <button tabIndex={-1} type="button" className="counter-btn" onClick={() => updateCount(row.categoryKey, "female", row.female - 1)}>-</button>
+                              <input className="counter-input" type="number" min={0} value={row.female} onFocus={(e) => e.currentTarget.select()} onChange={(e) => updateCount(row.categoryKey, "female", Number(e.target.value || 0))} />
+                              <button tabIndex={-1} type="button" className="counter-btn" onClick={() => updateCount(row.categoryKey, "female", row.female + 1)}>+</button>
                             </div>
+                            <div className="participant-row-total">{row.male + row.female}</div>
                           </div>
                         ))}
-                        <div className="participant-total-row"><strong>Total</strong><strong>{totalMale}</strong><strong>{totalFemale}</strong></div>
+                        <div className="participant-total-row"><strong>Total</strong><strong>{totalMale}</strong><strong>{totalFemale}</strong><strong>{grandTotal}</strong></div>
                       </div>
 
                       <div className="participant-mobile-list">
@@ -243,25 +278,27 @@ export const NewActivityForm = () => {
                               <div>
                                 <p className="participant-mobile-label">Male</p>
                                 <div className="counter-group">
-                                  <button type="button" className="counter-btn" onClick={() => updateCount(row.categoryKey, "male", row.male - 1)}>-</button>
-                                  <input className="counter-input" type="number" min={0} value={row.male} onChange={(e) => updateCount(row.categoryKey, "male", Number(e.target.value || 0))} />
-                                  <button type="button" className="counter-btn" onClick={() => updateCount(row.categoryKey, "male", row.male + 1)}>+</button>
+                                  <button tabIndex={-1} type="button" className="counter-btn" onClick={() => updateCount(row.categoryKey, "male", row.male - 1)}>-</button>
+                                  <input className="counter-input" type="number" min={0} value={row.male} onFocus={(e) => e.currentTarget.select()} onChange={(e) => updateCount(row.categoryKey, "male", Number(e.target.value || 0))} />
+                                  <button tabIndex={-1} type="button" className="counter-btn" onClick={() => updateCount(row.categoryKey, "male", row.male + 1)}>+</button>
                                 </div>
                               </div>
                               <div>
                                 <p className="participant-mobile-label">Female</p>
                                 <div className="counter-group">
-                                  <button type="button" className="counter-btn" onClick={() => updateCount(row.categoryKey, "female", row.female - 1)}>-</button>
-                                  <input className="counter-input" type="number" min={0} value={row.female} onChange={(e) => updateCount(row.categoryKey, "female", Number(e.target.value || 0))} />
-                                  <button type="button" className="counter-btn" onClick={() => updateCount(row.categoryKey, "female", row.female + 1)}>+</button>
+                                  <button tabIndex={-1} type="button" className="counter-btn" onClick={() => updateCount(row.categoryKey, "female", row.female - 1)}>-</button>
+                                  <input className="counter-input" type="number" min={0} value={row.female} onFocus={(e) => e.currentTarget.select()} onChange={(e) => updateCount(row.categoryKey, "female", Number(e.target.value || 0))} />
+                                  <button tabIndex={-1} type="button" className="counter-btn" onClick={() => updateCount(row.categoryKey, "female", row.female + 1)}>+</button>
                                 </div>
                               </div>
                             </div>
+                            <p className="participant-mobile-total-line">Total: {row.male + row.female}</p>
                           </article>
                         ))}
                         <article className="participant-mobile-total">
                           <p className="mb-1 fw-semibold">Total</p>
                           <div className="d-flex justify-content-between"><span>Male: {totalMale}</span><span>Female: {totalFemale}</span></div>
+                          <div className="mt-1 fw-semibold">Grand Total: {grandTotal}</div>
                         </article>
                       </div>
                     </>

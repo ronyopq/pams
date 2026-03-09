@@ -1,24 +1,19 @@
 "use client";
 
-import { useState } from "react";
 import clsx from "clsx";
 import { ActivityEntry } from "@/lib/types";
 import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
 import { StatusBadge } from "@/components/common/status-badge";
+import { printEntryTextReport } from "@/lib/print-report";
 
 type Props = {
   entry: ActivityEntry;
   onClose: () => void;
 };
 
-type Tab = "Overview" | "Participants" | "Financial" | "Files & Attachments";
-
-const tabs: Tab[] = ["Overview", "Participants", "Financial", "Files & Attachments"];
-
 export const EntryDetailsModal = ({ entry, onClose }: Props) => {
-  const [tab, setTab] = useState<Tab>("Overview");
-
   const utilization = entry.totalBudget ? (entry.totalExpenses / entry.totalBudget) * 100 : 0;
+  const participantRows = entry.participants.filter((line) => line.male + line.female > 0);
 
   return (
     <div className="modal-overlay" role="dialog" aria-modal="true">
@@ -42,8 +37,8 @@ export const EntryDetailsModal = ({ entry, onClose }: Props) => {
             <button className="outline-btn">
               <i className="bi bi-file-earmark-pdf" /> Export PDF
             </button>
-            <button className="outline-btn" onClick={() => window.print()}>
-              <i className="bi bi-printer" /> Print
+            <button className="outline-btn" onClick={() => printEntryTextReport(entry)}>
+              <i className="bi bi-printer" /> Print Text
             </button>
             <button className="icon-btn" onClick={onClose} aria-label="Close details">
               <i className="bi bi-x-lg" />
@@ -51,16 +46,9 @@ export const EntryDetailsModal = ({ entry, onClose }: Props) => {
           </div>
         </header>
 
-        <nav className="tab-nav">
-          {tabs.map((item) => (
-            <button key={item} className={clsx("tab-btn", tab === item && "active")} onClick={() => setTab(item)}>
-              {item}
-            </button>
-          ))}
-        </nav>
-
-        <section className="entry-modal-body">
-          {tab === "Overview" && (
+        <section className="entry-modal-body d-grid gap-3">
+          <article className="field-card full">
+            <h4 className="h6 mb-3">Overview</h4>
             <div className="detail-grid">
               <article className="field-card">
                 <p className="field-label">Date</p>
@@ -97,124 +85,115 @@ export const EntryDetailsModal = ({ entry, onClose }: Props) => {
                 <p className="field-value">{entry.notes}</p>
               </article>
             </div>
-          )}
+          </article>
 
-          {tab === "Participants" && (
-            <div className="d-grid gap-3">
-              <div className="summary-tiles">
-                <article className="metric-tile">
-                  <p className="field-value mb-1">{entry.grandTotal}</p>
-                  <p className="field-label mb-0">Total</p>
-                </article>
-                <article className="metric-tile">
-                  <p className="field-value mb-1">{entry.totalMale}</p>
-                  <p className="field-label mb-0">Male</p>
-                </article>
-                <article className="metric-tile">
-                  <p className="field-value mb-1">{entry.totalFemale}</p>
-                  <p className="field-label mb-0">Female</p>
-                </article>
-              </div>
-
-              <div className="table-responsive">
-                <table className="table align-middle mb-0 premium-table small">
-                  <thead>
-                    <tr>
-                      <th>Category</th>
-                      <th>Male</th>
-                      <th>Female</th>
-                      <th>Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {entry.participants
-                      .filter((line) => line.male + line.female > 0)
-                      .map((line) => (
-                        <tr key={line.categoryKey}>
-                          <td>{line.categoryLabel}</td>
-                          <td>{line.male}</td>
-                          <td>{line.female}</td>
-                          <td>{line.male + line.female}</td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {tab === "Financial" && (
-            <div className="d-grid gap-3">
-              <div className="summary-tiles">
-                <article className="metric-tile">
-                  <p className="field-label mb-1">Budget</p>
-                  <p className="field-value mb-0">{formatCurrency(entry.totalBudget)}</p>
-                </article>
-                <article className="metric-tile">
-                  <p className="field-label mb-1">Expenses</p>
-                  <p className="field-value mb-0">{formatCurrency(entry.totalExpenses)}</p>
-                </article>
-                <article className="metric-tile">
-                  <p className="field-label mb-1">Variance</p>
-                  <p className={clsx("field-value mb-0", entry.variance < 0 ? "text-danger" : "text-success")}>
-                    {entry.variance.toFixed(1)}%
-                  </p>
-                </article>
-              </div>
-
-              <article className="field-card full">
-                <div className="d-flex justify-content-between small mb-2">
-                  <span>Budget Utilization</span>
-                  <strong>{utilization.toFixed(1)}%</strong>
-                </div>
-                <div className="progress premium-progress" role="progressbar" aria-valuemin={0} aria-valuemax={100}>
-                  <div
-                    className={clsx("progress-bar", utilization > 100 ? "bg-danger" : "bg-success")}
-                    style={{ width: `${Math.min(100, utilization)}%` }}
-                  />
-                </div>
+          <article className="field-card full">
+            <h4 className="h6 mb-3">Participants</h4>
+            <div className="summary-tiles mb-3">
+              <article className="metric-tile">
+                <p className="field-value mb-1">{entry.grandTotal}</p>
+                <p className="field-label mb-0">Total</p>
+              </article>
+              <article className="metric-tile">
+                <p className="field-value mb-1">{entry.totalMale}</p>
+                <p className="field-label mb-0">Male</p>
+              </article>
+              <article className="metric-tile">
+                <p className="field-value mb-1">{entry.totalFemale}</p>
+                <p className="field-label mb-0">Female</p>
               </article>
             </div>
-          )}
-
-          {tab === "Files & Attachments" && (
-            <div className="d-grid gap-3">
-              <div className="d-flex justify-content-between align-items-center">
-                <p className="mb-0 text-muted">{entry.attachments.length} files</p>
-                <button className="outline-btn">
-                  <i className="bi bi-file-zip" /> Download ZIP
-                </button>
-              </div>
-
-              <div className="attachment-grid">
-                {entry.attachments.map((file) => (
-                  <article key={file.id} className="attachment-item">
-                    <div className="d-flex align-items-center gap-3">
-                      <div className="file-thumb">
-                        {file.type === "image" && file.url !== "#" ? (
-                          <img src={file.url} alt={file.name} />
-                        ) : (
-                          <i className={`bi ${file.type === "image" ? "bi-image" : "bi-file-earmark-text"}`} />
-                        )}
-                      </div>
-                      <div>
-                        <p className="mb-0 fw-semibold">{file.name}</p>
-                        <small className="text-muted">{file.category}</small>
-                      </div>
-                    </div>
-                    <div className="d-flex gap-2">
-                      <button className="icon-btn" aria-label="Preview file">
-                        <i className="bi bi-eye" />
-                      </button>
-                      <button className="icon-btn" aria-label="Download file">
-                        <i className="bi bi-download" />
-                      </button>
-                    </div>
-                  </article>
-                ))}
-              </div>
+            <div className="table-responsive">
+              <table className="table align-middle mb-0 premium-table small">
+                <thead>
+                  <tr>
+                    <th>Category</th>
+                    <th>Male</th>
+                    <th>Female</th>
+                    <th>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {participantRows.map((line) => (
+                    <tr key={line.categoryKey}>
+                      <td>{line.categoryLabel}</td>
+                      <td>{line.male}</td>
+                      <td>{line.female}</td>
+                      <td>{line.male + line.female}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          )}
+          </article>
+
+          <article className="field-card full">
+            <h4 className="h6 mb-3">Financial</h4>
+            <div className="summary-tiles mb-3">
+              <article className="metric-tile">
+                <p className="field-label mb-1">Budget</p>
+                <p className="field-value mb-0">{formatCurrency(entry.totalBudget)}</p>
+              </article>
+              <article className="metric-tile">
+                <p className="field-label mb-1">Expenses</p>
+                <p className="field-value mb-0">{formatCurrency(entry.totalExpenses)}</p>
+              </article>
+              <article className="metric-tile">
+                <p className="field-label mb-1">Variance</p>
+                <p className={clsx("field-value mb-0", entry.variance < 0 ? "text-danger" : "text-success")}>
+                  {entry.variance.toFixed(1)}%
+                </p>
+              </article>
+            </div>
+            <article className="field-card">
+              <div className="d-flex justify-content-between small mb-2">
+                <span>Budget Utilization</span>
+                <strong>{utilization.toFixed(1)}%</strong>
+              </div>
+              <div className="progress premium-progress" role="progressbar" aria-valuemin={0} aria-valuemax={100}>
+                <div
+                  className={clsx("progress-bar", utilization > 100 ? "bg-danger" : "bg-success")}
+                  style={{ width: `${Math.min(100, utilization)}%` }}
+                />
+              </div>
+            </article>
+          </article>
+
+          <article className="field-card full">
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h4 className="h6 mb-0">Files & Attachments</h4>
+              <button className="outline-btn">
+                <i className="bi bi-file-zip" /> Download ZIP
+              </button>
+            </div>
+            <div className="attachment-grid">
+              {entry.attachments.map((file) => (
+                <article key={file.id} className="attachment-item">
+                  <div className="d-flex align-items-center gap-3">
+                    <div className="file-thumb">
+                      {file.type === "image" && file.url !== "#" ? (
+                        <img src={file.url} alt={file.name} />
+                      ) : (
+                        <i className={`bi ${file.type === "image" ? "bi-image" : "bi-file-earmark-text"}`} />
+                      )}
+                    </div>
+                    <div>
+                      <p className="mb-0 fw-semibold">{file.name}</p>
+                      <small className="text-muted">{file.category}</small>
+                    </div>
+                  </div>
+                  <div className="d-flex gap-2">
+                    <button className="icon-btn" aria-label="Preview file">
+                      <i className="bi bi-eye" />
+                    </button>
+                    <button className="icon-btn" aria-label="Download file">
+                      <i className="bi bi-download" />
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </article>
         </section>
 
         <footer className="entry-modal-footer">

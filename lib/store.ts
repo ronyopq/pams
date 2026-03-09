@@ -1,6 +1,8 @@
 import {
+  auditLogs as defaultAuditLogs,
   entries as defaultEntries,
   implementedByOptions as defaultImplementedByOptions,
+  loginLogs as defaultLoginLogs,
   locations as defaultLocations,
   notifications as defaultNotifications,
   orgSettings as defaultOrgSettings,
@@ -11,8 +13,10 @@ import {
 } from "@/lib/mockData";
 import {
   ActivityEntry,
+  AuditLog,
   AppNotification,
   AppUser,
+  LoginLog,
   LocationMap,
   OrgSettings,
   ProjectActivityMap,
@@ -26,6 +30,8 @@ const LEGACY_STORAGE_KEY = "praan_app_state_v1";
 export type PersistedState = {
   entries: ActivityEntry[];
   notifications: AppNotification[];
+  loginLogs: LoginLog[];
+  auditLogs: AuditLog[];
   users: AppUser[];
   projectMap: ProjectActivityMap[];
   locationMap: LocationMap[];
@@ -59,6 +65,34 @@ const cloneUsers = (list: AppUser[]): AppUser[] =>
     projects: [...item.projects]
   }));
 
+const cloneLoginLogs = (list: LoginLog[]): LoginLog[] =>
+  list.map((item) => {
+    const legacy = item as LoginLog & { deviceInfo?: string };
+    const [legacyBrowser = "", legacyDevice = ""] = (legacy.deviceInfo || "").split("/");
+    return {
+      username: item.username,
+      loginTime: item.loginTime,
+      logoutTime: item.logoutTime,
+      ipAddress: item.ipAddress,
+      device: (item.device || legacyDevice || "Unknown Device").trim(),
+      browser: (item.browser || legacyBrowser || "Unknown Browser").trim(),
+      status: item.status
+    };
+  });
+
+const cloneAuditLogs = (list: AuditLog[]): AuditLog[] =>
+  list.map((item) => ({
+    actor: item.actor,
+    role: item.role,
+    action: item.action,
+    module: item.module,
+    targetId: item.targetId,
+    timestamp: item.timestamp,
+    device: item.device || "Unknown Device",
+    browser: item.browser || "Unknown Browser",
+    notes: item.notes
+  }));
+
 const cloneOrgSettings = (settings: OrgSettings): OrgSettings => ({
   orgName: settings.orgName,
   logoUrl: settings.logoUrl
@@ -83,6 +117,8 @@ const cloneReportSettings = (settings: ReportSettings): ReportSettings => ({
 const fallbackState = (): PersistedState => ({
   entries: defaultEntries.map((entry) => ({ ...entry })),
   notifications: defaultNotifications.map((note) => ({ ...note })),
+  loginLogs: cloneLoginLogs(defaultLoginLogs),
+  auditLogs: cloneAuditLogs(defaultAuditLogs),
   users: cloneUsers(defaultUsers),
   projectMap: cloneProjectMap(defaultProjectMap),
   locationMap: cloneLocationMap(defaultLocations),
@@ -125,6 +161,14 @@ export const getPersistedState = (): PersistedState => {
     return {
       entries: parsed.entries?.length ? parsed.entries : fallback.entries,
       notifications: parsed.notifications?.length ? parsed.notifications : fallback.notifications,
+      loginLogs:
+        Array.isArray(parsed.loginLogs) && parsed.loginLogs.length
+          ? cloneLoginLogs(parsed.loginLogs)
+          : fallback.loginLogs,
+      auditLogs:
+        Array.isArray(parsed.auditLogs) && parsed.auditLogs.length
+          ? cloneAuditLogs(parsed.auditLogs)
+          : fallback.auditLogs,
       users: Array.isArray(parsed.users) && parsed.users.length ? cloneUsers(parsed.users) : fallback.users,
       projectMap:
         Array.isArray(parsed.projectMap) && parsed.projectMap.length

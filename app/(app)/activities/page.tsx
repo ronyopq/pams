@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { EntryDetailsModal } from "@/components/activities/entry-details-modal";
 import { KpiCard } from "@/components/common/kpi-card";
 import { Pagination } from "@/components/common/pagination";
@@ -12,11 +13,17 @@ const PAGE_SIZE = 9;
 
 export default function ActivitiesPage() {
   const { visibleEntries, user } = useAppContext();
+  const searchParams = useSearchParams();
   const [query, setQuery] = useState("");
   const [project, setProject] = useState("All Projects");
   const [activityType, setActivityType] = useState("All Types");
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const openId = searchParams.get("entry");
+    if (openId) setSelectedId(openId);
+  }, [searchParams]);
 
   const projects = useMemo(
     () => ["All Projects", ...Array.from(new Set(visibleEntries.map((entry) => entry.project)))],
@@ -89,18 +96,15 @@ export default function ActivitiesPage() {
     <div className="d-grid gap-3">
       <section className="page-heading d-flex justify-content-between align-items-start flex-wrap gap-3">
         <div>
-          <h1 className="page-title">Previous Entries</h1>
+          <h1 className="page-title">My Activities</h1>
           <p className="page-subtitle">
             {user?.role === "User"
-              ? "Review and manage your logged activities"
+              ? "Review and manage your submitted activities"
               : "Review and manage all logged field activities"}
           </p>
         </div>
         <div className="d-flex gap-2 align-items-center">
           <button className="outline-btn">Bangla</button>
-          <button className="outline-btn" onClick={() => window.print()}>
-            <i className="bi bi-printer" /> Print Report
-          </button>
           <button className="primary-btn" onClick={exportCsv}>
             <i className="bi bi-download" /> Export CSV
           </button>
@@ -168,7 +172,7 @@ export default function ActivitiesPage() {
         <p className="small text-muted mt-3 mb-0">{filtered.length} results found</p>
       </section>
 
-      <section className="table-responsive panel-card p-0">
+      <section className="table-responsive panel-card p-0 entries-table-wrap entries-desktop-table">
         <table className="table align-middle premium-table entries-table mb-0">
           <thead>
             <tr>
@@ -186,7 +190,18 @@ export default function ActivitiesPage() {
           </thead>
           <tbody>
             {pagedRows.map((entry) => (
-              <tr key={entry.uniqueId}>
+              <tr
+                key={entry.uniqueId}
+                className="entry-row-clickable"
+                onClick={() => setSelectedId(entry.uniqueId)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    setSelectedId(entry.uniqueId);
+                  }
+                }}
+                tabIndex={0}
+              >
                 <td className="mono text-success fw-semibold">{entry.uniqueId}</td>
                 <td>
                   <p className="mb-0 fw-semibold text-truncate maxw-220">{entry.activityName}</p>
@@ -213,7 +228,14 @@ export default function ActivitiesPage() {
                 </td>
                 <td>{entry.createdBy}</td>
                 <td className="text-end">
-                  <button className="icon-btn" onClick={() => setSelectedId(entry.uniqueId)} aria-label="Open details">
+                  <button
+                    className="icon-btn"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setSelectedId(entry.uniqueId);
+                    }}
+                    aria-label="Open details"
+                  >
                     <i className="bi bi-eye" />
                   </button>
                 </td>
@@ -221,6 +243,46 @@ export default function ActivitiesPage() {
             ))}
           </tbody>
         </table>
+      </section>
+
+      <section className="entries-mobile-list">
+        {pagedRows.map((entry) => (
+          <article
+            key={entry.uniqueId}
+            className="entry-mobile-card"
+            onClick={() => setSelectedId(entry.uniqueId)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                setSelectedId(entry.uniqueId);
+              }
+            }}
+            tabIndex={0}
+          >
+            <div className="d-flex justify-content-between align-items-start gap-2">
+              <div>
+                <p className="mono text-success fw-semibold mb-1">{entry.uniqueId}</p>
+                <p className="fw-semibold mb-1">{entry.activityName}</p>
+                <p className="text-muted mb-0">{entry.activityType}</p>
+              </div>
+              <StatusBadge status={entry.status} />
+            </div>
+            <div className="entry-mobile-meta">
+              <span>Project: {entry.project}</span>
+              <span>Date: {formatDate(entry.date)}</span>
+              <span>
+                Location: {entry.district}, {entry.upazila}
+              </span>
+              <span>
+                Participants: {entry.grandTotal} ({entry.totalMale}M/{entry.totalFemale}F)
+              </span>
+              <span>
+                Budget: {formatCurrency(entry.totalBudget)} | Exp: {formatCurrency(entry.totalExpenses)}
+              </span>
+              <span>Submitted By: {entry.createdBy}</span>
+            </div>
+          </article>
+        ))}
       </section>
 
       <Pagination page={page} total={filtered.length} pageSize={PAGE_SIZE} onPageChange={setPage} />

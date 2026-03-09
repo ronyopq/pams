@@ -1,9 +1,11 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
+  auditLogs as defaultAuditLogs,
   entries as defaultEntries,
   implementedByOptions as defaultImplementedByOptions,
+  loginLogs as defaultLoginLogs,
   locations as defaultLocations,
   notifications as defaultNotifications,
   orgSettings as defaultOrgSettings,
@@ -16,8 +18,10 @@ import { calcVariance } from "@/lib/format";
 import { getPersistedState, savePersistedState, visibleEntries } from "@/lib/store";
 import {
   ActivityEntry,
+  AuditLog,
   AppNotification,
   AppUser,
+  LoginLog,
   EntryStatus,
   LocationMap,
   OrgSettings,
@@ -34,9 +38,13 @@ type RegisterInput = {
   project: string;
 };
 
+type PopupTone = "success" | "error" | "info";
+
 type AppContextValue = {
   user: AppUser | null;
   users: AppUser[];
+  loginLogs: LoginLog[];
+  auditLogs: AuditLog[];
   theme: ThemeMode;
   setTheme: (theme: ThemeMode) => void;
   language: "en" | "bn";
@@ -60,7 +68,9 @@ type AppContextValue = {
   setVenueOptions: (list: string[]) => void;
   setOrgSettings: (settings: OrgSettings) => void;
   setReportSettings: (settings: ReportSettings) => void;
+  notify: (message: string, tone?: PopupTone) => void;
   addEntry: (entry: ActivityEntry) => void;
+  addAuditLog: (action: string, module: string, targetId: string, notes: string) => void;
   updateEntryStatus: (id: string, status: EntryStatus) => void;
   markNotificationRead: (id: string) => void;
   unreadCount: number;
@@ -132,9 +142,33 @@ const isSameUser = (a: AppUser, b: AppUser) =>
   a.projects.length === b.projects.length &&
   a.projects.every((project, index) => project === b.projects[index]);
 
+const getClientMeta = () => {
+  if (typeof navigator === "undefined") {
+    return { device: "Unknown Device", browser: "Unknown Browser" };
+  }
+
+  const ua = navigator.userAgent.toLowerCase();
+  let browser = "Other";
+  if (ua.includes("edg/")) browser = "Edge";
+  else if (ua.includes("chrome/")) browser = "Chrome";
+  else if (ua.includes("firefox/")) browser = "Firefox";
+  else if (ua.includes("safari/") && !ua.includes("chrome/")) browser = "Safari";
+
+  let device = "Desktop";
+  if (ua.includes("android")) device = "Android";
+  else if (ua.includes("iphone") || ua.includes("ipad")) device = "iOS";
+  else if (ua.includes("windows")) device = "Windows";
+  else if (ua.includes("mac os")) device = "macOS";
+  else if (ua.includes("linux")) device = "Linux";
+
+  return { device, browser };
+};
+
 export const AppContextProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<AppUser | null>(null);
   const [users, setUsersState] = useState<AppUser[]>(cloneUsers(defaultUsers));
+  const [loginLogs, setLoginLogs] = useState<LoginLog[]>(defaultLoginLogs.map((item) => ({ ...item })));
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>(defaultAuditLogs.map((item) => ({ ...item })));
   const [theme, setThemeState] = useState<ThemeMode>("corporate-light");
   const [language, setLanguage] = useState<"en" | "bn">("en");
   const [entries, setEntries] = useState<ActivityEntry[]>(defaultEntries);
@@ -145,11 +179,15 @@ export const AppContextProvider = ({ children }: { children: React.ReactNode }) 
   const [venueOptions, setVenueOptionsState] = useState<string[]>([...defaultVenueOptions]);
   const [orgSettings, setOrgSettingsState] = useState<OrgSettings>(cloneOrgSettings(defaultOrgSettings));
   const [reportSettings, setReportSettingsState] = useState<ReportSettings>(cloneReportSettings(defaultReportSettings));
+  const [popup, setPopup] = useState<{ message: string; tone: PopupTone } | null>(null);
+  const popupTimer = useRef<number | null>(null);
 
   useEffect(() => {
     const state = getPersistedState();
     setEntries(state.entries);
     setNotifications(state.notifications);
+    setLoginLogs(state.loginLogs);
+    setAuditLogs(state.auditLogs);
     setUsersState(cloneUsers(state.users));
     setProjectMapState(cloneProjectMap(state.projectMap));
     setLocationMapState(cloneLocationMap(state.locationMap));
@@ -179,6 +217,8 @@ export const AppContextProvider = ({ children }: { children: React.ReactNode }) 
     savePersistedState({
       entries,
       notifications,
+      loginLogs,
+      auditLogs,
       users,
       projectMap,
       locationMap,
@@ -190,6 +230,8 @@ export const AppContextProvider = ({ children }: { children: React.ReactNode }) 
   }, [
     entries,
     notifications,
+    loginLogs,
+    auditLogs,
     users,
     projectMap,
     locationMap,
@@ -222,11 +264,32 @@ export const AppContextProvider = ({ children }: { children: React.ReactNode }) 
     }
   }, [users, user]);
 
+  useEffect(
+    () => () => {
+      if (popupTimer.current) window.clearTimeout(popupTimer.current);
+    },
+    []
+  );
+
   const login = (username: string, password: string) => {
     const found = users.find((item) => item.username.toLowerCase() === username.trim().toLowerCase());
     if (!found) return { ok: false, message: "User not found" };
     if (!found.active) return { ok: false, message: "Account is inactive" };
     if (password !== "123456") return { ok: false, message: "Invalid password (demo: 123456)" };
+
+    const meta = getClientMeta();
+    setLoginLogs((prev) => [
+      {
+        username: found.username,
+        loginTime: new Date().toISOString(),
+        logoutTime: "-",
+        ipAddress: "127.0.0.1",
+        device: meta.device,
+        browser: meta.browser,
+        status: "Success"
+      },
+      ...prev
+    ]);
 
     setUser(found);
     window.localStorage.setItem(SESSION_KEY, found.username);
@@ -254,6 +317,18 @@ export const AppContextProvider = ({ children }: { children: React.ReactNode }) 
   };
 
   const logout = () => {
+    const activeUser = user;
+    if (activeUser) {
+      setLoginLogs((prev) => {
+        const index = prev.findIndex(
+          (item) => item.username === activeUser.username && (item.logoutTime === "-" || !item.logoutTime)
+        );
+        if (index < 0) return prev;
+        return prev.map((item, currentIndex) =>
+          currentIndex === index ? { ...item, logoutTime: new Date().toISOString() } : item
+        );
+      });
+    }
     setUser(null);
     window.localStorage.removeItem(SESSION_KEY);
   };
@@ -314,6 +389,34 @@ export const AppContextProvider = ({ children }: { children: React.ReactNode }) 
     ]);
   };
 
+  const notify = (message: string, tone: PopupTone = "success") => {
+    if (popupTimer.current) window.clearTimeout(popupTimer.current);
+    setPopup({ message, tone });
+    popupTimer.current = window.setTimeout(() => {
+      setPopup(null);
+      popupTimer.current = null;
+    }, 2800);
+  };
+
+  const addAuditLog = (action: string, module: string, targetId: string, notes: string) => {
+    if (!user) return;
+    const meta = getClientMeta();
+    setAuditLogs((prev) => [
+      {
+        actor: user.username,
+        role: user.role,
+        action,
+        module,
+        targetId,
+        timestamp: new Date().toISOString(),
+        device: meta.device,
+        browser: meta.browser,
+        notes
+      },
+      ...prev
+    ]);
+  };
+
   const updateEntryStatus = (id: string, status: EntryStatus) => {
     setEntries((prev) =>
       prev.map((entry) => {
@@ -347,6 +450,8 @@ export const AppContextProvider = ({ children }: { children: React.ReactNode }) 
       value={{
         user,
         users,
+        loginLogs,
+        auditLogs,
         theme,
         setTheme,
         language,
@@ -370,7 +475,9 @@ export const AppContextProvider = ({ children }: { children: React.ReactNode }) 
         setVenueOptions,
         setOrgSettings,
         setReportSettings,
+        notify,
         addEntry,
+        addAuditLog,
         updateEntryStatus,
         markNotificationRead,
         unreadCount,
@@ -378,6 +485,27 @@ export const AppContextProvider = ({ children }: { children: React.ReactNode }) 
       }}
     >
       {children}
+      {popup && (
+        <div className="app-popup-backdrop" onClick={() => setPopup(null)}>
+          <div className={`app-popup-card app-popup-${popup.tone}`} onClick={(event) => event.stopPropagation()}>
+            <div className="app-popup-icon">
+              <i
+                className={`bi ${
+                  popup.tone === "success"
+                    ? "bi-check2-circle"
+                    : popup.tone === "error"
+                      ? "bi-exclamation-octagon"
+                      : "bi-info-circle"
+                }`}
+              />
+            </div>
+            <p className="app-popup-message">{popup.message}</p>
+            <button className="outline-btn" onClick={() => setPopup(null)}>
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </AppContext.Provider>
   );
 };

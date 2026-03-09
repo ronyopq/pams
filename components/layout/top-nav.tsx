@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import clsx from "clsx";
@@ -17,7 +17,7 @@ const mobileTabs = [
   { href: "/dashboard", label: "Home", icon: "bi-house" },
   { href: "/activities/new", label: "New", icon: "bi-plus-circle" },
   { href: "/activities", label: "Activities", icon: "bi-clipboard-data" },
-  { href: "/files", label: "Files", icon: "bi-folder" }
+  { href: "/calendar", label: "Calendar", icon: "bi-calendar3" }
 ];
 
 export const TopNav = () => {
@@ -25,6 +25,10 @@ export const TopNav = () => {
   const router = useRouter();
   const { user, toggleTheme, theme, language, toggleLanguage, unreadCount, logout, orgSettings } = useAppContext();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
 
   if (!user) return null;
 
@@ -68,9 +72,6 @@ export const TopNav = () => {
             <button className="outline-btn flex-grow-1" onClick={toggleLanguage}>
               {language === "en" ? "Bangla" : "English"}
             </button>
-            <button className="icon-btn" onClick={() => window.print()} aria-label="Print report">
-              <i className="bi bi-printer" />
-            </button>
             {(user.role === "Admin" || user.role === "Manager") && (
               <Link href="/notifications" className="icon-btn text-decoration-none position-relative">
                 <i className="bi bi-bell" />
@@ -113,9 +114,6 @@ export const TopNav = () => {
               {unreadCount > 0 && <span className="notif-dot">{unreadCount}</span>}
             </Link>
           )}
-          <button className="icon-btn" onClick={() => window.print()} aria-label="Print report">
-            <i className="bi bi-printer" />
-          </button>
           <button className="icon-btn" onClick={toggleTheme} aria-label="Toggle theme">
             <i className={`bi ${theme === "corporate-dark" ? "bi-brightness-high" : "bi-moon"}`} />
           </button>

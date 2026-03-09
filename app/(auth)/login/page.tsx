@@ -7,16 +7,16 @@ import { useAppContext } from "@/components/providers/app-context";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useAppContext();
+  const { login, notify } = useAppContext();
   const [username, setUsername] = useState("admin");
   const [password, setPassword] = useState("123456");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [nextPath, setNextPath] = useState("/dashboard");
+  const [nextPath, setNextPath] = useState("/activities/new");
 
   useEffect(() => {
     const query = new URLSearchParams(window.location.search);
-    setNextPath(query.get("next") || "/dashboard");
+    setNextPath(query.get("next") || "/activities/new");
   }, []);
 
   const onSubmit = (event: FormEvent) => {
@@ -26,7 +26,9 @@ export default function LoginPage() {
 
     const result = login(username, password);
     if (!result.ok) {
-      setError(result.message || "Login failed");
+      const message = result.message || "Login failed";
+      setError(message);
+      notify(message, "error");
       setLoading(false);
       return;
     }
@@ -35,9 +37,13 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="auth-card-wrap">
-      <div className="auth-card">
-        <div className="mb-4 text-center">
+    <div className="auth-card-wrap login-hero-wrap">
+      <div className="auth-card login-card">
+        <div className="login-card-glow" aria-hidden="true" />
+        <div className="mb-4 text-center login-head">
+          <div className="login-logo-badge">
+            <i className="bi bi-stars" />
+          </div>
           <p className="auth-eyebrow mb-2">PRAAN Activity Management System</p>
           <h1 className="auth-title">Welcome Back</h1>
           <p className="text-muted mb-0">Sign in with your account to continue.</p>
@@ -47,7 +53,7 @@ export default function LoginPage() {
           <div>
             <label className="form-label">Username</label>
             <input
-              className="form-control premium-input"
+              className="form-control premium-input login-input"
               value={username}
               onChange={(event) => setUsername(event.target.value)}
               placeholder="Enter username"
@@ -59,7 +65,7 @@ export default function LoginPage() {
             <label className="form-label">Password</label>
             <input
               type="password"
-              className="form-control premium-input"
+              className="form-control premium-input login-input"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               placeholder="Enter password"
@@ -70,7 +76,7 @@ export default function LoginPage() {
 
           {error && <div className="alert alert-danger py-2 mb-0">{error}</div>}
 
-          <button className="primary-btn w-100" disabled={loading}>
+          <button className="primary-btn w-100 login-submit-btn" disabled={loading}>
             {loading ? "Signing In..." : "Sign In"}
           </button>
         </form>

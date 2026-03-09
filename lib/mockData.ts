@@ -641,7 +641,8 @@ export const loginLogs: LoginLog[] = [
     loginTime: "2026-03-08T03:35:00Z",
     logoutTime: "2026-03-08T06:10:00Z",
     ipAddress: "103.94.11.14",
-    deviceInfo: "Chrome / Windows 11",
+    device: "Windows 11",
+    browser: "Chrome",
     status: "Success"
   },
   {
@@ -649,7 +650,8 @@ export const loginLogs: LoginLog[] = [
     loginTime: "2026-03-08T02:10:00Z",
     logoutTime: "2026-03-08T04:50:00Z",
     ipAddress: "103.94.18.77",
-    deviceInfo: "Edge / Windows 11",
+    device: "Windows 11",
+    browser: "Edge",
     status: "Success"
   },
   {
@@ -657,7 +659,8 @@ export const loginLogs: LoginLog[] = [
     loginTime: "2026-03-07T22:44:00Z",
     logoutTime: "2026-03-08T01:20:00Z",
     ipAddress: "103.94.2.52",
-    deviceInfo: "Chrome / macOS",
+    device: "macOS",
+    browser: "Chrome",
     status: "Success"
   }
 ];
@@ -670,6 +673,8 @@ export const auditLogs: AuditLog[] = [
     module: "Project Settings",
     targetId: "WASH Project",
     timestamp: "2026-03-07T21:15:00Z",
+    device: "Windows 11",
+    browser: "Chrome",
     notes: "Reordered categories and enabled NGO Staff"
   },
   {
@@ -679,6 +684,8 @@ export const auditLogs: AuditLog[] = [
     module: "Entries",
     targetId: "PR-260215",
     timestamp: "2026-02-15T17:00:00Z",
+    device: "Windows 11",
+    browser: "Edge",
     notes: "Marked reviewed after financial verification"
   },
   {
@@ -688,6 +695,8 @@ export const auditLogs: AuditLog[] = [
     module: "Admin",
     targetId: "user:karim",
     timestamp: "2026-02-12T09:20:00Z",
+    device: "macOS",
+    browser: "Chrome",
     notes: "Assigned role User and project access"
   }
 ];
