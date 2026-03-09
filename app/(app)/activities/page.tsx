@@ -96,7 +96,7 @@ export default function ActivitiesPage() {
     <div className="d-grid gap-3">
       <section className="page-heading d-flex justify-content-between align-items-start flex-wrap gap-3">
         <div>
-          <h1 className="page-title">My Activities</h1>
+          <h1 className="page-title">My Activity</h1>
           <p className="page-subtitle">
             {user?.role === "User"
               ? "Review and manage your submitted activities"
@@ -104,7 +104,6 @@ export default function ActivitiesPage() {
           </p>
         </div>
         <div className="d-flex gap-2 align-items-center page-actions">
-          <button className="outline-btn">Bangla</button>
           <button className="primary-btn" onClick={exportCsv}>
             <i className="bi bi-download" /> Export CSV
           </button>

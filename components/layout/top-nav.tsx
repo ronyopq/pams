@@ -16,7 +16,7 @@ const isActivePath = (pathname: string, href: string) => {
 const mobileTabs = [
   { href: "/dashboard", label: "Home", icon: "bi-house" },
   { href: "/activities/new", label: "New", icon: "bi-plus-circle" },
-  { href: "/activities", label: "Activities", icon: "bi-clipboard-data" },
+  { href: "/activities", label: "My Activity", icon: "bi-clipboard-data" },
   { href: "/calendar", label: "Calendar", icon: "bi-calendar3" }
 ];
 

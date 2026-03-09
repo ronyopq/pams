@@ -30,7 +30,11 @@ const toAttachments = (filesByCategory: Record<AttachmentCategory, UploadedItem[
 };
 
 const shortFileName = (name: string, max = 10) => (name.length <= max ? name : `${name.slice(0, max)}...`);
-const moneyInput = (value: string) => value.replace(/[^\d]/g, "");
+const moneyInput = (value: string) => {
+  const digits = value.replace(/[^\d]/g, "");
+  if (!digits) return "";
+  return String(Number(digits));
+};
 
 const buildNarrative = (form: FormState, participants: ParticipantLine[], attachmentCount: number, budgetValue: number, expenseValue: number) => {
   const male = participants.reduce((sum, item) => sum + item.male, 0);
@@ -406,7 +410,7 @@ export const NewActivityForm = () => {
             </article>
           </div>
         </section>
-        <aside className="live-summary">
+        <section className="live-summary live-summary-below">
           <div className="panel-card sticky-panel">
             <h2 className="summary-title"><i className="bi bi-journal-text" /> Live Summary</h2>
             <div className="summary-block">
@@ -424,7 +428,7 @@ export const NewActivityForm = () => {
             <div className="summary-block"><div className="summary-row"><span><i className="bi bi-paperclip" /> Attachments</span><strong>{attachmentCount}</strong></div></div>
             <p className="summary-note"><i className="bi bi-info-circle" /> Complete all sections and confirm before submitting.</p>
           </div>
-        </aside>
+        </section>
       </form>
     </>
   );

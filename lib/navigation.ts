@@ -9,7 +9,7 @@ export type NavItem = {
 const userNav: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: "bi-house" },
   { href: "/activities/new", label: "New Activity", icon: "bi-plus-circle" },
-  { href: "/activities", label: "My Activities", icon: "bi-clipboard-data" },
+  { href: "/activities", label: "My Activity", icon: "bi-clipboard-data" },
   { href: "/calendar", label: "Calendar", icon: "bi-calendar3" },
   { href: "/files", label: "Files", icon: "bi-folder" },
   { href: "/profile", label: "Profile", icon: "bi-person" },
@@ -18,7 +18,7 @@ const userNav: NavItem[] = [
 
 const managerNav: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: "bi-house" },
-  { href: "/activities", label: "Entries", icon: "bi-clipboard-data" },
+  { href: "/activities", label: "My Activity", icon: "bi-clipboard-data" },
   { href: "/calendar", label: "Calendar", icon: "bi-calendar3" },
   { href: "/dashboard#analytics", label: "Analytics", icon: "bi-bar-chart" },
   { href: "/files", label: "Files", icon: "bi-folder" },
@@ -30,7 +30,7 @@ const managerNav: NavItem[] = [
 const adminNav: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: "bi-house" },
   { href: "/activities/new", label: "New Activity", icon: "bi-plus-circle" },
-  { href: "/activities", label: "Entries", icon: "bi-clipboard-data" },
+  { href: "/activities", label: "My Activity", icon: "bi-clipboard-data" },
   { href: "/calendar", label: "Calendar", icon: "bi-calendar3" },
   { href: "/dashboard#analytics", label: "Analytics", icon: "bi-bar-chart" },
   { href: "/files", label: "Files", icon: "bi-folder" },
