@@ -1745,6 +1745,132 @@ a {
   gap: 0.75rem;
 }
 
+.location-editor-grid {
+  display: grid;
+  grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+  gap: 0.85rem;
+}
+
+.location-editor-pane {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 0.75rem;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.location-editor-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.location-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface-soft);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.location-list {
+  display: grid;
+  gap: 0.4rem;
+  max-height: 360px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.location-list-item {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-soft);
+  color: var(--text);
+  padding: 0.5rem 0.62rem;
+  text-align: left;
+  display: grid;
+  gap: 0.08rem;
+  transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
+}
+
+.location-list-item:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--brand) 40%, var(--line));
+}
+
+.location-list-item.active {
+  border-color: color-mix(in srgb, var(--brand) 42%, var(--line));
+  background: color-mix(in srgb, var(--brand-soft) 65%, var(--surface-soft));
+}
+
+.location-item-name {
+  font-weight: 600;
+}
+
+.location-item-meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.location-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.42rem;
+}
+
+.location-sub-grid {
+  display: grid;
+  grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+.location-empty-state {
+  min-height: 140px;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface-soft) 85%, transparent);
+  color: var(--text-muted);
+  display: grid;
+  place-items: center;
+  text-align: center;
+  gap: 0.32rem;
+  padding: 0.75rem;
+}
+
+.location-empty-state i {
+  font-size: 1.15rem;
+}
+
+.union-chip {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--text);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  padding: 0.28rem 0.56rem;
+  font-size: 0.78rem;
+}
+
+.union-chip i {
+  font-size: 0.65rem;
+}
+
+button.union-chip:hover {
+  border-color: color-mix(in srgb, var(--brand) 45%, var(--line));
+  color: var(--brand);
+}
+
 @media (max-width: 1199.98px) {
   .grid-kpi {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1885,6 +2011,8 @@ a {
   .financial-cards,
   .admin-layout-grid,
   .admin-kv-grid,
+  .location-editor-grid,
+  .location-sub-grid,
   .calendar-modern-layout {
     grid-template-columns: 1fr;
   }

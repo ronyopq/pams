@@ -35,6 +35,16 @@ const slugify = (v: string) =>
     .replace(/[^a-z0-9]+/g, "_")
     .replace(/^_+|_+$/g, "");
 
+const parseUnionsText = (value: string) =>
+  Array.from(
+    new Set(
+      value
+        .split(/[\n,]+/g)
+        .map((item) => item.trim())
+        .filter(Boolean)
+    )
+  );
+
 const themeOptions: Array<{ value: ThemeMode; label: string }> = [
   { value: "corporate-light", label: "Corporate Light" },
   { value: "corporate-dark", label: "Corporate Dark" },
@@ -107,6 +117,11 @@ export default function AdminPage() {
   const [projects, setProjects] = useState<ProjectActivityMap[]>(cloneProjects(appProjectMap));
   const [projectIdx, setProjectIdx] = useState(0);
   const [locationEditor, setLocationEditor] = useState<LocationMap[]>(cloneLocations(appLocationMap));
+  const [selectedDistrictIdx, setSelectedDistrictIdx] = useState(0);
+  const [selectedUpazilaIdx, setSelectedUpazilaIdx] = useState(0);
+  const [newDistrictName, setNewDistrictName] = useState("");
+  const [newUpazilaName, setNewUpazilaName] = useState("");
+  const [unionEditor, setUnionEditor] = useState("");
   const [users, setUsers] = useState<AppUser[]>(appUsers.map((u) => ({ ...u, projects: [...u.projects] })));
   const [editUser, setEditUser] = useState<string | null>(null);
   const [userForm, setUserForm] = useState<UserForm>(emptyUser);
@@ -131,12 +146,32 @@ export default function AdminPage() {
 
   const projectNames = useMemo(() => projects.map((p) => p.project), [projects]);
   const currentProject = projects[projectIdx] ?? projects[0];
+  const selectedDistrict = locationEditor[selectedDistrictIdx];
+  const selectedUpazila = selectedDistrict?.upazilas[selectedUpazilaIdx];
 
   useEffect(() => setOrgName(orgSettings.orgName), [orgSettings.orgName]);
   useEffect(() => setLogoUrl(orgSettings.logoUrl), [orgSettings.logoUrl]);
   useEffect(() => setProjects(cloneProjects(appProjectMap)), [appProjectMap]);
   useEffect(() => setLocationEditor(cloneLocations(appLocationMap)), [appLocationMap]);
   useEffect(() => setUsers(appUsers.map((u) => ({ ...u, projects: [...u.projects] }))), [appUsers]);
+  useEffect(() => {
+    if (selectedDistrictIdx >= locationEditor.length) {
+      setSelectedDistrictIdx(0);
+    }
+  }, [locationEditor.length, selectedDistrictIdx]);
+  useEffect(() => {
+    const upazilaLength = locationEditor[selectedDistrictIdx]?.upazilas.length ?? 0;
+    if (selectedUpazilaIdx >= upazilaLength) {
+      setSelectedUpazilaIdx(0);
+    }
+  }, [locationEditor, selectedDistrictIdx, selectedUpazilaIdx]);
+  useEffect(() => {
+    if (!selectedUpazila) {
+      setUnionEditor("");
+      return;
+    }
+    setUnionEditor(selectedUpazila.unions.join(", "));
+  }, [selectedUpazila]);
   useEffect(() => {
     if (projectIdx >= projects.length) setProjectIdx(0);
   }, [projectIdx, projects.length]);
@@ -242,6 +277,124 @@ export default function AdminPage() {
     );
     setNewCategory("");
   };
+  const addDistrict = () => {
+    const name = newDistrictName.trim();
+    if (!name) return;
+    if (locationEditor.some((item) => item.district.toLowerCase() === name.toLowerCase())) {
+      notify("District name already exists.", "error");
+      return;
+    }
+
+    setLocationEditor((prev) => [...prev, { district: name, upazilas: [] }]);
+    setSelectedDistrictIdx(locationEditor.length);
+    setSelectedUpazilaIdx(0);
+    setNewDistrictName("");
+  };
+  const updateDistrictName = (value: string) => {
+    if (!selectedDistrict) return;
+    setLocationEditor((prev) =>
+      prev.map((district, index) => (index === selectedDistrictIdx ? { ...district, district: value } : district))
+    );
+  };
+  const deleteDistrict = () => {
+    if (!selectedDistrict) return;
+    setLocationEditor((prev) => prev.filter((_, index) => index !== selectedDistrictIdx));
+    setSelectedDistrictIdx((prev) => Math.max(0, prev - 1));
+    setSelectedUpazilaIdx(0);
+  };
+  const moveDistrict = (dir: "up" | "down") => {
+    if (!selectedDistrict) return;
+    const target = dir === "up" ? selectedDistrictIdx - 1 : selectedDistrictIdx + 1;
+    if (target < 0 || target >= locationEditor.length) return;
+    setLocationEditor((prev) => move(prev, selectedDistrictIdx, dir));
+    setSelectedDistrictIdx(target);
+  };
+  const addUpazila = () => {
+    const name = newUpazilaName.trim();
+    if (!selectedDistrict || !name) return;
+    if (selectedDistrict.upazilas.some((item) => item.name.toLowerCase() === name.toLowerCase())) {
+      notify("Upazila name already exists in this district.", "error");
+      return;
+    }
+    setLocationEditor((prev) =>
+      prev.map((district, index) =>
+        index === selectedDistrictIdx ? { ...district, upazilas: [...district.upazilas, { name, unions: [] }] } : district
+      )
+    );
+    setSelectedUpazilaIdx(selectedDistrict.upazilas.length);
+    setNewUpazilaName("");
+  };
+  const updateUpazilaName = (value: string) => {
+    if (!selectedDistrict || !selectedUpazila) return;
+    setLocationEditor((prev) =>
+      prev.map((district, districtIndex) =>
+        districtIndex === selectedDistrictIdx
+          ? {
+              ...district,
+              upazilas: district.upazilas.map((upazila, upazilaIndex) =>
+                upazilaIndex === selectedUpazilaIdx ? { ...upazila, name: value } : upazila
+              )
+            }
+          : district
+      )
+    );
+  };
+  const deleteUpazila = () => {
+    if (!selectedDistrict || !selectedUpazila) return;
+    setLocationEditor((prev) =>
+      prev.map((district, districtIndex) =>
+        districtIndex === selectedDistrictIdx
+          ? { ...district, upazilas: district.upazilas.filter((_, upazilaIndex) => upazilaIndex !== selectedUpazilaIdx) }
+          : district
+      )
+    );
+    setSelectedUpazilaIdx((prev) => Math.max(0, prev - 1));
+  };
+  const moveUpazila = (dir: "up" | "down") => {
+    if (!selectedDistrict || !selectedUpazila) return;
+    const target = dir === "up" ? selectedUpazilaIdx - 1 : selectedUpazilaIdx + 1;
+    if (target < 0 || target >= selectedDistrict.upazilas.length) return;
+    setLocationEditor((prev) =>
+      prev.map((district, districtIndex) =>
+        districtIndex === selectedDistrictIdx ? { ...district, upazilas: move(district.upazilas, selectedUpazilaIdx, dir) } : district
+      )
+    );
+    setSelectedUpazilaIdx(target);
+  };
+  const saveUnions = () => {
+    if (!selectedDistrict || !selectedUpazila) return;
+    const unions = parseUnionsText(unionEditor);
+    setLocationEditor((prev) =>
+      prev.map((district, districtIndex) =>
+        districtIndex === selectedDistrictIdx
+          ? {
+              ...district,
+              upazilas: district.upazilas.map((upazila, upazilaIndex) =>
+                upazilaIndex === selectedUpazilaIdx ? { ...upazila, unions } : upazila
+              )
+            }
+          : district
+      )
+    );
+    notify("Union list updated for selected upazila.", "success");
+  };
+  const removeUnion = (name: string) => {
+    if (!selectedDistrict || !selectedUpazila) return;
+    const nextUnions = selectedUpazila.unions.filter((item) => item !== name);
+    setUnionEditor(nextUnions.join(", "));
+    setLocationEditor((prev) =>
+      prev.map((district, districtIndex) =>
+        districtIndex === selectedDistrictIdx
+          ? {
+              ...district,
+              upazilas: district.upazilas.map((upazila, upazilaIndex) =>
+                upazilaIndex === selectedUpazilaIdx ? { ...upazila, unions: nextUnions } : upazila
+              )
+            }
+          : district
+      )
+    );
+  };
   const upsertUser = () => {
     if (!userForm.fullName.trim() || !userForm.username.trim() || !userForm.email.trim()) return;
     const payload: AppUser = {
@@ -315,46 +468,174 @@ export default function AdminPage() {
           {tab === "locations" && (
             <article className="panel-card settings-section">
               <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-                <h3 className="h5 mb-0">Location Mapping</h3>
-                <button className="outline-btn" onClick={() => setLocationEditor((prev) => [...prev, { district: "", upazilas: [{ name: "", unions: [""] }] }])}><i className="bi bi-plus-circle" /> Add District</button>
+                <div>
+                  <h3 className="h5 mb-1">Location Mapping</h3>
+                  <p className="text-muted small mb-0">District -&gt; Upazila -&gt; Union hierarchy editor.</p>
+                </div>
+                <button className="primary-btn" onClick={() => persistLocations()}>
+                  <i className="bi bi-save" /> Save Location Mapping
+                </button>
               </div>
-              <div className="d-grid gap-3">
-                {locationEditor.map((district, dIdx) => (
-                  <article key={`district-${dIdx}`} className="admin-location-card">
-                    <div className="d-flex gap-2 flex-wrap align-items-center mb-2">
-                      <input className="form-control premium-input flex-grow-1" placeholder="District" value={district.district} onChange={(e) => setLocationEditor((prev) => prev.map((d, i) => (i === dIdx ? { ...d, district: e.target.value } : d)))} />
-                      <button className="icon-btn" onClick={() => setLocationEditor((prev) => move(prev, dIdx, "up"))}><i className="bi bi-arrow-up" /></button>
-                      <button className="icon-btn" onClick={() => setLocationEditor((prev) => move(prev, dIdx, "down"))}><i className="bi bi-arrow-down" /></button>
-                      <button className="icon-btn" onClick={() => setLocationEditor((prev) => prev.map((d, i) => (i === dIdx ? { ...d, upazilas: [...d.upazilas, { name: "", unions: [""] }] } : d)))}><i className="bi bi-plus-lg" /></button>
-                      <button className="icon-btn" onClick={() => setLocationEditor((prev) => prev.filter((_, i) => i !== dIdx))}><i className="bi bi-trash" /></button>
+
+              <section className="location-editor-grid">
+                <article className="location-editor-pane">
+                  <header className="location-editor-head">
+                    <h4 className="h6 mb-0">Districts</h4>
+                    <span className="location-count">{locationEditor.length}</span>
+                  </header>
+                  <div className="d-flex gap-2">
+                    <input
+                      className="form-control premium-input"
+                      placeholder="New district name"
+                      value={newDistrictName}
+                      onChange={(e) => setNewDistrictName(e.target.value)}
+                    />
+                    <button className="outline-btn" onClick={addDistrict}>
+                      <i className="bi bi-plus-lg" /> Add
+                    </button>
+                  </div>
+                  <div className="location-list mt-2">
+                    {locationEditor.map((district, index) => (
+                      <button
+                        key={`district-${district.district || "new"}-${index}`}
+                        className={`location-list-item ${selectedDistrictIdx === index ? "active" : ""}`}
+                        onClick={() => {
+                          setSelectedDistrictIdx(index);
+                          setSelectedUpazilaIdx(0);
+                        }}
+                      >
+                        <span className="location-item-name">{district.district || "Untitled District"}</span>
+                        <span className="location-item-meta">{district.upazilas.length} upazila</span>
+                      </button>
+                    ))}
+                    {!locationEditor.length && <p className="text-muted small mb-0">No district added yet.</p>}
+                  </div>
+                  <div className="location-actions mt-2">
+                    <button className="icon-btn" onClick={() => moveDistrict("up")} disabled={!selectedDistrict || selectedDistrictIdx === 0}>
+                      <i className="bi bi-arrow-up" />
+                    </button>
+                    <button
+                      className="icon-btn"
+                      onClick={() => moveDistrict("down")}
+                      disabled={!selectedDistrict || selectedDistrictIdx >= locationEditor.length - 1}
+                    >
+                      <i className="bi bi-arrow-down" />
+                    </button>
+                    <button className="icon-btn" onClick={deleteDistrict} disabled={!selectedDistrict}>
+                      <i className="bi bi-trash" />
+                    </button>
+                  </div>
+                </article>
+
+                <article className="location-editor-pane">
+                  {!selectedDistrict ? (
+                    <div className="location-empty-state">
+                      <i className="bi bi-map" />
+                      <p className="mb-0">Select a district to manage upazila and union mapping.</p>
                     </div>
-                    <div className="d-grid gap-2">
-                      {district.upazilas.map((upazila, uIdx) => (
-                        <article key={`upazila-${dIdx}-${uIdx}`} className="admin-upazila-card">
-                          <div className="d-flex gap-2 flex-wrap align-items-center">
-                            <input className="form-control premium-input flex-grow-1" placeholder="Upazila" value={upazila.name} onChange={(e) => setLocationEditor((prev) => prev.map((d, i) => i === dIdx ? { ...d, upazilas: d.upazilas.map((u, j) => (j === uIdx ? { ...u, name: e.target.value } : u)) } : d))} />
-                            <button className="icon-btn" onClick={() => setLocationEditor((prev) => prev.map((d, i) => (i === dIdx ? { ...d, upazilas: move(d.upazilas, uIdx, "up") } : d)))}><i className="bi bi-arrow-up" /></button>
-                            <button className="icon-btn" onClick={() => setLocationEditor((prev) => prev.map((d, i) => (i === dIdx ? { ...d, upazilas: move(d.upazilas, uIdx, "down") } : d)))}><i className="bi bi-arrow-down" /></button>
-                            <button className="icon-btn" onClick={() => setLocationEditor((prev) => prev.map((d, i) => i === dIdx ? { ...d, upazilas: d.upazilas.map((u, j) => (j === uIdx ? { ...u, unions: [...u.unions, ""] } : u)) } : d))}><i className="bi bi-plus-lg" /></button>
-                            <button className="icon-btn" onClick={() => setLocationEditor((prev) => prev.map((d, i) => i === dIdx ? { ...d, upazilas: d.upazilas.filter((_, j) => j !== uIdx) } : d))}><i className="bi bi-trash" /></button>
+                  ) : (
+                    <div className="d-grid gap-3">
+                      <div>
+                        <label className="form-label">District Name</label>
+                        <input
+                          className="form-control premium-input"
+                          value={selectedDistrict.district}
+                          onChange={(e) => updateDistrictName(e.target.value)}
+                        />
+                      </div>
+
+                      <div className="location-sub-grid">
+                        <div>
+                          <div className="d-flex justify-content-between align-items-center mb-2">
+                            <h5 className="h6 mb-0">Upazilas</h5>
+                            <span className="location-count">{selectedDistrict.upazilas.length}</span>
                           </div>
-                          <div className="d-grid gap-2 mt-2">
-                            {upazila.unions.map((union, unionIdx) => (
-                              <div key={`union-${dIdx}-${uIdx}-${unionIdx}`} className="d-flex gap-2 flex-wrap align-items-center">
-                                <input className="form-control premium-input flex-grow-1" placeholder="Union" value={union} onChange={(e) => setLocationEditor((prev) => prev.map((d, i) => i === dIdx ? { ...d, upazilas: d.upazilas.map((u, j) => j === uIdx ? { ...u, unions: u.unions.map((n, k) => (k === unionIdx ? e.target.value : n)) } : u) } : d))} />
-                                <button className="icon-btn" onClick={() => setLocationEditor((prev) => prev.map((d, i) => i === dIdx ? { ...d, upazilas: d.upazilas.map((u, j) => j === uIdx ? { ...u, unions: move(u.unions, unionIdx, "up") } : u) } : d))}><i className="bi bi-arrow-up" /></button>
-                                <button className="icon-btn" onClick={() => setLocationEditor((prev) => prev.map((d, i) => i === dIdx ? { ...d, upazilas: d.upazilas.map((u, j) => j === uIdx ? { ...u, unions: move(u.unions, unionIdx, "down") } : u) } : d))}><i className="bi bi-arrow-down" /></button>
-                                <button className="icon-btn" onClick={() => setLocationEditor((prev) => prev.map((d, i) => i === dIdx ? { ...d, upazilas: d.upazilas.map((u, j) => j === uIdx ? { ...u, unions: u.unions.filter((_, k) => k !== unionIdx) } : u) } : d))}><i className="bi bi-trash" /></button>
-                              </div>
+                          <div className="d-flex gap-2 mb-2">
+                            <input
+                              className="form-control premium-input"
+                              placeholder="New upazila name"
+                              value={newUpazilaName}
+                              onChange={(e) => setNewUpazilaName(e.target.value)}
+                            />
+                            <button className="outline-btn" onClick={addUpazila}>
+                              <i className="bi bi-plus-lg" /> Add
+                            </button>
+                          </div>
+                          <div className="location-list">
+                            {selectedDistrict.upazilas.map((upazila, index) => (
+                              <button
+                                key={`upazila-${upazila.name || "new"}-${index}`}
+                                className={`location-list-item ${selectedUpazilaIdx === index ? "active" : ""}`}
+                                onClick={() => setSelectedUpazilaIdx(index)}
+                              >
+                                <span className="location-item-name">{upazila.name || "Untitled Upazila"}</span>
+                                <span className="location-item-meta">{upazila.unions.length} union</span>
+                              </button>
                             ))}
+                            {!selectedDistrict.upazilas.length && (
+                              <p className="text-muted small mb-0">No upazila in this district yet.</p>
+                            )}
                           </div>
-                        </article>
-                      ))}
+                          <div className="location-actions mt-2">
+                            <button className="icon-btn" onClick={() => moveUpazila("up")} disabled={!selectedUpazila || selectedUpazilaIdx === 0}>
+                              <i className="bi bi-arrow-up" />
+                            </button>
+                            <button
+                              className="icon-btn"
+                              onClick={() => moveUpazila("down")}
+                              disabled={!selectedUpazila || selectedUpazilaIdx >= selectedDistrict.upazilas.length - 1}
+                            >
+                              <i className="bi bi-arrow-down" />
+                            </button>
+                            <button className="icon-btn" onClick={deleteUpazila} disabled={!selectedUpazila}>
+                              <i className="bi bi-trash" />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div>
+                          {!selectedUpazila ? (
+                            <div className="location-empty-state">
+                              <i className="bi bi-geo-alt" />
+                              <p className="mb-0">Select an upazila to edit union list.</p>
+                            </div>
+                          ) : (
+                            <div className="d-grid gap-2">
+                              <label className="form-label">Upazila Name</label>
+                              <input
+                                className="form-control premium-input"
+                                value={selectedUpazila.name}
+                                onChange={(e) => updateUpazilaName(e.target.value)}
+                              />
+                              <label className="form-label mt-2">Union List (comma or new line)</label>
+                              <textarea
+                                className="form-control premium-input"
+                                rows={7}
+                                value={unionEditor}
+                                onChange={(e) => setUnionEditor(e.target.value)}
+                              />
+                              <div className="d-flex justify-content-between align-items-center gap-2 flex-wrap">
+                                <p className="small text-muted mb-0">{parseUnionsText(unionEditor).length} union prepared</p>
+                                <button className="outline-btn" onClick={saveUnions}>
+                                  <i className="bi bi-check2-circle" /> Update Unions
+                                </button>
+                              </div>
+                              <div className="d-flex flex-wrap gap-2">
+                                {selectedUpazila.unions.map((name) => (
+                                  <button key={name} className="union-chip" onClick={() => removeUnion(name)}>
+                                    {name}
+                                    <i className="bi bi-x-lg" />
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </article>
-                ))}
-              </div>
-              <div className="mt-3"><button className="primary-btn" onClick={() => persistLocations()}>Save Location Mapping</button></div>
+                  )}
+                </article>
+              </section>
             </article>
           )}
           {tab === "participants" && (
