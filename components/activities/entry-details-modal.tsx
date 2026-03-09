@@ -5,6 +5,7 @@ import { ActivityEntry } from "@/lib/types";
 import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
 import { StatusBadge } from "@/components/common/status-badge";
 import { printEntryTextReport } from "@/lib/print-report";
+import { getFileIconClass, isImageFileName } from "@/lib/file-icons";
 
 type Props = {
   entry: ActivityEntry;
@@ -82,7 +83,12 @@ export const EntryDetailsModal = ({ entry, onClose }: Props) => {
               </article>
               <article className="field-card full">
                 <p className="field-label">Notes</p>
-                <p className="field-value">{entry.notes}</p>
+                <textarea
+                  className="form-control premium-input notes-preview-textarea"
+                  value={entry.notes || "-"}
+                  rows={4}
+                  readOnly
+                />
               </article>
             </div>
           </article>
@@ -170,15 +176,15 @@ export const EntryDetailsModal = ({ entry, onClose }: Props) => {
               {entry.attachments.map((file) => (
                 <article key={file.id} className="attachment-item">
                   <div className="d-flex align-items-center gap-3">
-                    <div className="file-thumb">
-                      {file.type === "image" && file.url !== "#" ? (
+                    <div className="file-thumb file-thumb-large">
+                      {(file.type === "image" || isImageFileName(file.name)) && file.url !== "#" ? (
                         <img src={file.url} alt={file.name} />
                       ) : (
-                        <i className={`bi ${file.type === "image" ? "bi-image" : "bi-file-earmark-text"}`} />
+                        <i className={`bi ${getFileIconClass(file.name)} file-type-icon-large`} />
                       )}
                     </div>
-                    <div>
-                      <p className="mb-0 fw-semibold">{file.name}</p>
+                    <div className="min-w-0 flex-grow-1">
+                      <p className="mb-0 fw-semibold text-truncate">{file.name}</p>
                       <small className="text-muted">{file.category}</small>
                     </div>
                   </div>

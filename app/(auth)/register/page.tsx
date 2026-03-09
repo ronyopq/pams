@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAppContext } from "@/components/providers/app-context";
 
 export default function RegisterPage() {
-  const { register, projectMap } = useAppContext();
+  const { register, projectMap, notify } = useAppContext();
   const router = useRouter();
   const [form, setForm] = useState({
     fullName: "",
@@ -16,7 +16,6 @@ export default function RegisterPage() {
     password: "",
     confirm: ""
   });
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!form.project && projectMap[0]?.project) {
@@ -26,9 +25,9 @@ export default function RegisterPage() {
 
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
-    setError(null);
     if (form.password !== form.confirm) {
-      setError("Passwords do not match");
+      const message = "Passwords do not match";
+      notify(message, "error");
       return;
     }
 
@@ -40,11 +39,13 @@ export default function RegisterPage() {
     });
 
     if (!result.ok) {
-      setError(result.message || "Registration failed");
+      const message = result.message || "Registration failed";
+      notify(message, "error");
       return;
     }
 
-    router.push("/dashboard");
+    notify("Registration successful. Redirecting to new activity entry...", "success");
+    router.push("/activities/new");
   };
 
   return (
@@ -122,8 +123,6 @@ export default function RegisterPage() {
               />
             </div>
           </div>
-
-          {error && <div className="alert alert-danger py-2 mb-0">{error}</div>}
 
           <button className="primary-btn w-100">Create Account</button>
         </form>

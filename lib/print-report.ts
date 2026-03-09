@@ -12,7 +12,7 @@ const escapeHtml = (value: string) =>
 const openTextPrintWindow = (title: string, content: string) => {
   const printWindow = window.open("", "_blank", "noopener,noreferrer,width=900,height=980");
   if (!printWindow) {
-    window.alert("Popup blocked. Please allow popups to print the report.");
+    console.warn("Popup blocked. Please allow popups to print the report.");
     return;
   }
 
@@ -68,9 +68,19 @@ const openTextPrintWindow = (title: string, content: string) => {
 export const printEntryTextReport = (entry: ActivityEntry) => {
   const nonZeroParticipants = entry.participants.filter((line) => line.male + line.female > 0);
   const participantLines = nonZeroParticipants.length
-    ? nonZeroParticipants
-        .map((line) => `${line.categoryLabel}: Male ${line.male}, Female ${line.female}, Total ${line.male + line.female}`)
-        .join("\n")
+    ? [
+        "Category                        Male     Female   Total",
+        "---------------------------------------------------------",
+        ...nonZeroParticipants.map((line) => {
+          const category = line.categoryLabel.padEnd(30, " ").slice(0, 30);
+          const male = String(line.male).padEnd(8, " ");
+          const female = String(line.female).padEnd(9, " ");
+          const total = String(line.male + line.female);
+          return `${category}${male}${female}${total}`;
+        }),
+        "---------------------------------------------------------",
+        `Total                           ${String(entry.totalMale).padEnd(8, " ")}${String(entry.totalFemale).padEnd(9, " ")}${entry.grandTotal}`
+      ].join("\n")
     : "No participant rows with value greater than zero.";
 
   const attachmentLines = entry.attachments.length
@@ -82,35 +92,66 @@ export const printEntryTextReport = (entry: ActivityEntry) => {
         .join("\n")
     : "No attachments uploaded.";
 
+  const firstFourPhotos = entry.attachments.filter((file) => file.type === "image").slice(0, 4);
+  const photoGrid = firstFourPhotos.length
+    ? [
+        `${firstFourPhotos[0] ? `[1] ${firstFourPhotos[0].name}` : "[1] -"}`.padEnd(52, " ") +
+          `${firstFourPhotos[1] ? `[2] ${firstFourPhotos[1].name}` : "[2] -"}`,
+        `${firstFourPhotos[2] ? `[3] ${firstFourPhotos[2].name}` : "[3] -"}`.padEnd(52, " ") +
+          `${firstFourPhotos[3] ? `[4] ${firstFourPhotos[3].name}` : "[4] -"}`
+      ].join("\n")
+    : "No photo files available for preview.";
+
   const report = [
-    "SECTION 1: OVERVIEW",
-    `Unique ID: ${entry.uniqueId}`,
-    `Status: ${entry.status}`,
+    "PRAAN ACTIVITY REPORT (TEXT VERSION)",
+    "Based on approved DOCX reporting format",
+    "",
+    "Organization: PRAAN",
+    "",
+    "SECTION 1: FORM OVERVIEW",
     `Date: ${formatDate(entry.date)}`,
-    `Project: ${entry.project}`,
-    `Activity: ${entry.activityName}`,
-    `Activity Type: ${entry.activityType}`,
+    `Project Name: ${entry.project}`,
+    `Activity Name: ${entry.activityName}`,
     `Activity Code: ${entry.activityCode}`,
+    `District: ${entry.district}`,
+    `Upazila: ${entry.upazila}`,
+    `Union: ${entry.union}`,
     `Venue: ${entry.venue}`,
     `Implemented By: ${entry.implementedBy}`,
-    `Submitted By: ${entry.createdBy}`,
-    `Location: ${entry.district} > ${entry.upazila} > ${entry.union}`,
-    `Reference Link: ${entry.referenceLink || "-"}`,
-    `Notes: ${entry.notes || "-"}`,
     "",
-    "SECTION 2: PARTICIPANTS",
-    `Total Participants: ${entry.grandTotal}`,
-    `Male: ${entry.totalMale}`,
-    `Female: ${entry.totalFemale}`,
+    `Unique ID: ${entry.uniqueId}`,
+    `Status: ${entry.status}`,
+    `Activity Type: ${entry.activityType}`,
+    `Submitted By: ${entry.createdBy}`,
+    `Reference Link: ${entry.referenceLink || "-"}`,
+    "",
+    "SECTION 2: NARRATIVE REPORT",
+    entry.aiReport || "-",
+    "",
+    "SECTION 3: NOTES",
+    entry.notes || "-",
+    "",
+    "SECTION 4: PARTICIPANTS (TABLE STYLE)",
     participantLines,
     "",
-    "SECTION 3: FINANCIAL",
+    "SECTION 5: FINANCIAL",
     `Budget: ${formatCurrency(entry.totalBudget)}`,
     `Expenses: ${formatCurrency(entry.totalExpenses)}`,
     `Variance: ${entry.variance.toFixed(1)}%`,
     "",
-    "SECTION 4: FILES & ATTACHMENTS",
+    "SECTION 6: FILES & ATTACHMENTS",
     attachmentLines,
+    "",
+    `Total Attachments: ${entry.attachments.length}`,
+    "",
+    `SECTION 7: SOME PICTURES FROM "${entry.activityName}"`,
+    "First 4 pictures shown in 2-column text layout:",
+    photoGrid,
+    "",
+    "SECTION 8: REPORT PREPARED BY",
+    `Name: ${entry.createdBy}`,
+    `Designation: ${entry.implementedBy}`,
+    `Date: ${entry.submittedAt ? formatDate(entry.submittedAt) : formatDate(entry.createdAt)}`,
     "",
     `Submitted At: ${entry.submittedAt ? formatDateTime(entry.submittedAt) : "Not submitted"}`
   ].join("\n");

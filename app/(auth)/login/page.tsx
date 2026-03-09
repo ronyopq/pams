@@ -10,7 +10,6 @@ export default function LoginPage() {
   const { login, notify } = useAppContext();
   const [username, setUsername] = useState("admin");
   const [password, setPassword] = useState("123456");
-  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [nextPath, setNextPath] = useState("/activities/new");
 
@@ -22,12 +21,10 @@ export default function LoginPage() {
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
     setLoading(true);
-    setError(null);
 
     const result = login(username, password);
     if (!result.ok) {
       const message = result.message || "Login failed";
-      setError(message);
       notify(message, "error");
       setLoading(false);
       return;
@@ -73,8 +70,6 @@ export default function LoginPage() {
             />
             <small className="text-muted">Demo password: 123456</small>
           </div>
-
-          {error && <div className="alert alert-danger py-2 mb-0">{error}</div>}
 
           <button className="primary-btn w-100 login-submit-btn" disabled={loading}>
             {loading ? "Signing In..." : "Sign In"}

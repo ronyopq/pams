@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAppContext } from "@/components/providers/app-context";
 import { calcUtilization, calcVariance, formatCurrency } from "@/lib/format";
 import { ActivityAttachment, ActivityEntry, AttachmentCategory, EntryStatus, ParticipantLine, ProjectActivityMap } from "@/lib/types";
+import { getFileIconClass } from "@/lib/file-icons";
 
 const uploadCategories: AttachmentCategory[] = ["Implementation Plan", "Participants List", "Press Release", "Activity Report", "Bill Voucher", "Photos"];
 const docUploadCategories: AttachmentCategory[] = ["Implementation Plan", "Participants List", "Press Release", "Activity Report", "Bill Voucher"];
@@ -344,8 +345,16 @@ export const NewActivityForm = () => {
                           {filesByCategory[category].map((item, index) => (
                             <div className="file-chip" key={`${item.file.name}-${index}`}>
                               <div className="file-chip-main">
-                                <span className="file-mini-thumb">{item.previewUrl ? <img src={item.previewUrl} alt={item.file.name} /> : <i className="bi bi-file-earmark-richtext file-type-icon" />}</span>
-                                <span className="file-name-short" title={item.file.name}>{shortFileName(item.file.name, 10)}</span>
+                                <span className="file-mini-thumb">
+                                  {item.previewUrl ? (
+                                    <img src={item.previewUrl} alt={item.file.name} />
+                                  ) : (
+                                    <i className={`bi ${getFileIconClass(item.file.name)} file-type-icon file-type-icon-large`} />
+                                  )}
+                                </span>
+                                <span className="file-name-short" title={item.file.name}>
+                                  {shortFileName(item.file.name, 10)}
+                                </span>
                               </div>
                               <button type="button" className="chip-close" onClick={() => removeFile(category, index)} aria-label="Remove file"><i className="bi bi-x" /></button>
                             </div>

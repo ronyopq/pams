@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useAppContext } from "@/components/providers/app-context";
 import { formatDate, normalizeText } from "@/lib/format";
+import { getFileIconClass, isImageFileName } from "@/lib/file-icons";
 
 export default function FilesPage() {
   const { visibleEntries } = useAppContext();
@@ -54,10 +55,10 @@ export default function FilesPage() {
             <div className="d-flex justify-content-between align-items-start gap-2">
               <div className="d-flex gap-2 align-items-start">
                 <span className="file-thumb">
-                  {file.type === "image" && file.url !== "#" ? (
+                  {(file.type === "image" || isImageFileName(file.name)) && file.url !== "#" ? (
                     <img src={file.url} alt={file.name} />
                   ) : (
-                    <i className={`bi ${file.type === "image" ? "bi-image" : "bi-file-earmark-text"}`} />
+                    <i className={`bi ${getFileIconClass(file.name)} file-type-icon-large`} />
                   )}
                 </span>
                 <div>

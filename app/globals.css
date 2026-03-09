@@ -729,6 +729,25 @@ a {
   color: var(--text-muted);
 }
 
+.file-thumb-large {
+  width: 72px;
+  height: 72px;
+  border-radius: 12px;
+}
+
+.file-type-icon-large {
+  font-size: 1.7rem;
+}
+
+.notes-preview-textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.min-w-0 {
+  min-width: 0;
+}
+
 .soft-badge {
   border: 1px solid var(--line);
   background: var(--surface-soft);
@@ -1846,6 +1865,16 @@ a {
 
   .mobile-overlay.show {
     display: block;
+  }
+
+  .page-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .page-actions .outline-btn,
+  .page-actions .primary-btn {
+    flex: 1 1 0;
   }
 
   .detail-grid,

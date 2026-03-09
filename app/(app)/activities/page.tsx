@@ -103,7 +103,7 @@ export default function ActivitiesPage() {
               : "Review and manage all logged field activities"}
           </p>
         </div>
-        <div className="d-flex gap-2 align-items-center">
+        <div className="d-flex gap-2 align-items-center page-actions">
           <button className="outline-btn">Bangla</button>
           <button className="primary-btn" onClick={exportCsv}>
             <i className="bi bi-download" /> Export CSV
