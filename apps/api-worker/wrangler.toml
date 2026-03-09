@@ -1,0 +1,28 @@
+name = "smart-work-tracker-api"
+main = "src/index.ts"
+compatibility_date = "2025-03-01"
+workers_dev = true
+
+[vars]
+APP_ORIGIN = "http://localhost:3000"
+API_ORIGIN = "http://127.0.0.1:8787"
+ACCESS_TOKEN_TTL_SECONDS = "900"
+REFRESH_TOKEN_TTL_SECONDS = "2592000"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "smart-work-tracker-db"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+migrations_dir = "../../db/migrations"
+
+[[r2_buckets]]
+binding = "FILES_BUCKET"
+bucket_name = "smart-work-tracker-files"
+
+[[durable_objects.bindings]]
+name = "RATE_LIMITER"
+class_name = "RateLimiterDO"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RateLimiterDO"]

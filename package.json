@@ -1,0 +1,14 @@
+{
+  "name": "smart-work-tracker",
+  "private": true,
+  "version": "1.0.0",
+  "packageManager": "pnpm@9.15.4",
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "pnpm --filter @smart-work-tracker/web dev",
+    "dev:api": "pnpm --filter @smart-work-tracker/api-worker dev",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test"
+  }
+}

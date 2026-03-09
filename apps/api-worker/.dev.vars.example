@@ -1,0 +1,6 @@
+JWT_ACCESS_SECRET=replace-with-strong-access-secret
+JWT_REFRESH_SECRET=replace-with-strong-refresh-secret
+APP_ORIGIN=http://localhost:3000
+API_ORIGIN=http://127.0.0.1:8787
+ACCESS_TOKEN_TTL_SECONDS=900
+REFRESH_TOKEN_TTL_SECONDS=2592000

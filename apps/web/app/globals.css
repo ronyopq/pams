@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #f4f8ff;
+  --foreground: #11233a;
+  --card: #ffffff;
+  --card-foreground: #1a3251;
+  --primary: #0f67f2;
+  --primary-foreground: #ffffff;
+  --muted: #deebff;
+  --muted-foreground: #4e6385;
+  --border: #c3d8ff;
+}
+
+* {
+  @apply border-border;
+}
+
+body {
+  background:
+    radial-gradient(circle at 12% 15%, rgba(15, 103, 242, 0.14), transparent 36%),
+    radial-gradient(circle at 88% 88%, rgba(10, 156, 118, 0.18), transparent 34%),
+    linear-gradient(180deg, #f8fbff 0%, #edf5ff 100%);
+  color: var(--foreground);
+  min-height: 100vh;
+}
+
+.panel {
+  @apply rounded-2xl border bg-card shadow-panel;
+}
