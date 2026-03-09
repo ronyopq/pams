@@ -1,5 +1,6 @@
 import { ActivityEntry, PrintSetup } from "@/lib/types";
 import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
+import { jsPDF } from "jspdf";
 
 const escapeHtml = (value: string) =>
   value
@@ -65,7 +66,16 @@ const openTextPrintWindow = (title: string, content: string) => {
   printWindow.document.close();
 };
 
-export const printEntryTextReport = (entry: ActivityEntry) => {
+const downloadBlob = (filename: string, blob: Blob) => {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+};
+
+export const buildEntryTextReport = (entry: ActivityEntry) => {
   const nonZeroParticipants = entry.participants.filter((line) => line.male + line.female > 0);
   const participantLines = nonZeroParticipants.length
     ? [
@@ -102,7 +112,7 @@ export const printEntryTextReport = (entry: ActivityEntry) => {
       ].join("\n")
     : "No photo files available for preview.";
 
-  const report = [
+  return [
     "PRAAN ACTIVITY REPORT (TEXT VERSION)",
     "Based on approved DOCX reporting format",
     "",
@@ -155,8 +165,41 @@ export const printEntryTextReport = (entry: ActivityEntry) => {
     "",
     `Submitted At: ${entry.submittedAt ? formatDateTime(entry.submittedAt) : "Not submitted"}`
   ].join("\n");
+};
 
-  openTextPrintWindow(`PRAAN Text Report - ${entry.uniqueId}`, report);
+export const printEntryTextReport = (entry: ActivityEntry) => {
+  openTextPrintWindow(`PRAAN Text Report - ${entry.uniqueId}`, buildEntryTextReport(entry));
+};
+
+export const exportEntryDocxReport = (entry: ActivityEntry) => {
+  const content = buildEntryTextReport(entry);
+  const blob = new Blob([content], {
+    type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  });
+  downloadBlob(`${entry.uniqueId}-report.docx`, blob);
+};
+
+export const exportEntryPdfReport = (entry: ActivityEntry) => {
+  const doc = new jsPDF({ unit: "pt", format: "a4", compress: true });
+  const title = `PRAAN Report - ${entry.uniqueId}`;
+  const report = buildEntryTextReport(entry);
+  const lines = doc.splitTextToSize(report, 520);
+  let y = 40;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(13);
+  doc.text(title, 36, y);
+  y += 22;
+  doc.setFont("courier", "normal");
+  doc.setFontSize(9);
+  lines.forEach((line: string) => {
+    if (y > 800) {
+      doc.addPage();
+      y = 40;
+    }
+    doc.text(line, 36, y);
+    y += 12;
+  });
+  doc.save(`${entry.uniqueId}-report.pdf`);
 };
 
 export const printTemplatePreview = (setup: PrintSetup, templateName: string) => {

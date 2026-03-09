@@ -75,7 +75,8 @@ export type ActivityEntry = {
 
 export type ProjectActivityMap = {
   project: string;
-  activities: Array<{ name: string; code: string; type: string }>;
+  locked?: boolean;
+  activities: Array<{ name: string; code: string; type: string; locked?: boolean }>;
   participantCategories: Array<{ key: string; label: string }>;
 };
 

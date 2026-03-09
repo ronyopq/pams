@@ -18,7 +18,8 @@ type UserForm = {
 const cloneProjects = (items: ProjectActivityMap[]) =>
   items.map((p) => ({
     project: p.project,
-    activities: p.activities.map((a) => ({ ...a })),
+    locked: Boolean(p.locked),
+    activities: p.activities.map((a) => ({ ...a, locked: Boolean(a.locked) })),
     participantCategories: p.participantCategories.map((c) => ({ ...c }))
   }));
 
@@ -252,7 +253,7 @@ export default function AdminPage() {
   const addProject = () => {
     const name = newProject.trim();
     if (!name || projects.some((p) => p.project.toLowerCase() === name.toLowerCase())) return;
-    setProjects((prev) => [...prev, { project: name, activities: [], participantCategories: [] }]);
+    setProjects((prev) => [...prev, { project: name, locked: false, activities: [], participantCategories: [] }]);
     setNewProject("");
   };
   const addActivity = () => {
@@ -260,12 +261,79 @@ export default function AdminPage() {
     setProjects((prev) =>
       prev.map((p, i) =>
         i === projectIdx
-          ? { ...p, activities: [...p.activities, { name: newActivity.trim(), code: newCode.trim(), type: newType }] }
+          ? {
+              ...p,
+              activities: [...p.activities, { name: newActivity.trim(), code: newCode.trim(), type: newType, locked: false }]
+            }
           : p
       )
     );
     setNewActivity("");
     setNewCode("");
+  };
+  const updateProjectName = (value: string) => {
+    if (!currentProject) return;
+    const nextName = value.trimStart();
+    setProjects((prev) => prev.map((project, index) => (index === projectIdx ? { ...project, project: nextName } : project)));
+  };
+  const toggleProjectLock = () => {
+    if (!currentProject) return;
+    setProjects((prev) =>
+      prev.map((project, index) => (index === projectIdx ? { ...project, locked: !project.locked } : project))
+    );
+  };
+  const deleteProject = () => {
+    if (!currentProject) return;
+    if (projects.length <= 1) {
+      notify("At least one project is required.", "error");
+      return;
+    }
+    setProjects((prev) => prev.filter((_, index) => index !== projectIdx));
+    setProjectIdx((prev) => Math.max(0, prev - 1));
+  };
+  const updateActivityField = (
+    activityIndex: number,
+    field: "name" | "code" | "type",
+    value: string
+  ) => {
+    if (!currentProject) return;
+    setProjects((prev) =>
+      prev.map((project, index) =>
+        index === projectIdx
+          ? {
+              ...project,
+              activities: project.activities.map((activity, itemIndex) =>
+                itemIndex === activityIndex ? { ...activity, [field]: value } : activity
+              )
+            }
+          : project
+      )
+    );
+  };
+  const toggleActivityLock = (activityIndex: number) => {
+    if (!currentProject) return;
+    setProjects((prev) =>
+      prev.map((project, index) =>
+        index === projectIdx
+          ? {
+              ...project,
+              activities: project.activities.map((activity, itemIndex) =>
+                itemIndex === activityIndex ? { ...activity, locked: !activity.locked } : activity
+              )
+            }
+          : project
+      )
+    );
+  };
+  const deleteActivity = (activityIndex: number) => {
+    if (!currentProject) return;
+    setProjects((prev) =>
+      prev.map((project, index) =>
+        index === projectIdx
+          ? { ...project, activities: project.activities.filter((_, itemIndex) => itemIndex !== activityIndex) }
+          : project
+      )
+    );
   };
   const addCategory = () => {
     const label = newCategory.trim();
@@ -454,15 +522,143 @@ export default function AdminPage() {
             <article className="panel-card settings-section">
               <h3 className="h5 mb-3">Project - Activity - Code</h3>
               <div className="row g-3">
-                <div className="col-md-6"><label className="form-label">Projects</label><select className="form-select premium-input" value={currentProject?.project || ""} onChange={(e) => setProjectIdx(Math.max(projectNames.indexOf(e.target.value), 0))}>{projectNames.map((n) => <option key={n}>{n}</option>)}</select></div>
-                <div className="col-md-6"><label className="form-label">Add Project</label><div className="d-flex gap-2"><input className="form-control premium-input" value={newProject} onChange={(e) => setNewProject(e.target.value)} /><button className="outline-btn" onClick={addProject}>Add</button></div></div>
-                <div className="col-md-5"><label className="form-label">Activity</label><input className="form-control premium-input" value={newActivity} onChange={(e) => setNewActivity(e.target.value)} /></div>
-                <div className="col-md-3"><label className="form-label">Code</label><input className="form-control premium-input" value={newCode} onChange={(e) => setNewCode(e.target.value)} /></div>
-                <div className="col-md-2"><label className="form-label">Type</label><select className="form-select premium-input" value={newType} onChange={(e) => setNewType(e.target.value)}><option>Training</option><option>Workshop</option><option>Meeting</option><option>Distribution</option><option>Campaign</option></select></div>
-                <div className="col-md-2 d-flex align-items-end"><button className="outline-btn w-100" onClick={addActivity}>Add Activity</button></div>
+                <div className="col-md-4">
+                  <label className="form-label">Projects</label>
+                  <select
+                    className="form-select premium-input"
+                    value={currentProject?.project || ""}
+                    onChange={(e) => setProjectIdx(Math.max(projectNames.indexOf(e.target.value), 0))}
+                  >
+                    {projectNames.map((n) => (
+                      <option key={n}>{n}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="col-md-4">
+                  <label className="form-label">Project Name</label>
+                  <input
+                    className="form-control premium-input"
+                    value={currentProject?.project || ""}
+                    onChange={(e) => updateProjectName(e.target.value)}
+                  />
+                </div>
+                <div className="col-md-4 d-flex align-items-end gap-2">
+                  <button className="outline-btn flex-fill" onClick={toggleProjectLock} disabled={!currentProject}>
+                    <i className={`bi ${currentProject?.locked ? "bi-unlock" : "bi-lock"}`} />{" "}
+                    {currentProject?.locked ? "Unlock Project" : "Lock Project"}
+                  </button>
+                  <button className="danger-outline flex-fill" onClick={deleteProject} disabled={!currentProject}>
+                    <i className="bi bi-trash" /> Delete
+                  </button>
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label">Add Project</label>
+                  <div className="d-flex gap-2">
+                    <input
+                      className="form-control premium-input"
+                      value={newProject}
+                      onChange={(e) => setNewProject(e.target.value)}
+                    />
+                    <button className="outline-btn" onClick={addProject}>
+                      Add
+                    </button>
+                  </div>
+                </div>
+                <div className="col-md-6 d-flex align-items-end">
+                  {currentProject && (
+                    <span className={`soft-badge ${currentProject.locked ? "text-danger" : "text-success"}`}>
+                      Project status: {currentProject.locked ? "Locked" : "Unlocked"}
+                    </span>
+                  )}
+                </div>
+
+                <div className="col-md-5">
+                  <label className="form-label">Activity</label>
+                  <input className="form-control premium-input" value={newActivity} onChange={(e) => setNewActivity(e.target.value)} />
+                </div>
+                <div className="col-md-3">
+                  <label className="form-label">Code</label>
+                  <input className="form-control premium-input" value={newCode} onChange={(e) => setNewCode(e.target.value)} />
+                </div>
+                <div className="col-md-2">
+                  <label className="form-label">Type</label>
+                  <select className="form-select premium-input" value={newType} onChange={(e) => setNewType(e.target.value)}>
+                    <option>Training</option>
+                    <option>Workshop</option>
+                    <option>Meeting</option>
+                    <option>Distribution</option>
+                    <option>Campaign</option>
+                  </select>
+                </div>
+                <div className="col-md-2 d-flex align-items-end">
+                  <button className="outline-btn w-100" onClick={addActivity}>
+                    Add Activity
+                  </button>
+                </div>
               </div>
-              <div className="table-responsive mt-3"><table className="table premium-table mb-0"><thead><tr><th>Activity</th><th>Code</th><th>Type</th></tr></thead><tbody>{currentProject?.activities.map((a) => <tr key={a.code + a.name}><td>{a.name}</td><td className="mono">{a.code}</td><td>{a.type}</td></tr>)}</tbody></table></div>
-              <div className="mt-3"><button className="primary-btn" onClick={() => persistProjects()}>Save</button></div>
+              <div className="table-responsive mt-3">
+                <table className="table premium-table mb-0">
+                  <thead>
+                    <tr>
+                      <th>Activity</th>
+                      <th>Code</th>
+                      <th>Type</th>
+                      <th>Lock</th>
+                      <th />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {currentProject?.activities.map((activity, idx) => (
+                      <tr key={`${activity.code}-${idx}`}>
+                        <td>
+                          <input
+                            className="form-control premium-input"
+                            value={activity.name}
+                            onChange={(e) => updateActivityField(idx, "name", e.target.value)}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            className="form-control premium-input mono"
+                            value={activity.code}
+                            onChange={(e) => updateActivityField(idx, "code", e.target.value)}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            className="form-control premium-input"
+                            value={activity.type}
+                            onChange={(e) => updateActivityField(idx, "type", e.target.value)}
+                          />
+                        </td>
+                        <td>
+                          <button className="outline-btn" onClick={() => toggleActivityLock(idx)}>
+                            <i className={`bi ${activity.locked ? "bi-unlock" : "bi-lock"}`} />
+                            {activity.locked ? "Unlock" : "Lock"}
+                          </button>
+                        </td>
+                        <td className="text-end">
+                          <button className="danger-outline" onClick={() => deleteActivity(idx)}>
+                            <i className="bi bi-trash" /> Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {!currentProject?.activities.length && (
+                      <tr>
+                        <td colSpan={5} className="text-muted">
+                          No activities added for this project.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              <div className="mt-3">
+                <button className="primary-btn" onClick={() => persistProjects()}>
+                  Save
+                </button>
+              </div>
             </article>
           )}
           {tab === "locations" && (

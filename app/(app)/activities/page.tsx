@@ -8,21 +8,38 @@ import { Pagination } from "@/components/common/pagination";
 import { StatusBadge } from "@/components/common/status-badge";
 import { useAppContext } from "@/components/providers/app-context";
 import { formatCurrency, formatDate, normalizeText } from "@/lib/format";
+import { ActivityEntry } from "@/lib/types";
 
 const PAGE_SIZE = 9;
 
 export default function ActivitiesPage() {
-  const { visibleEntries, user } = useAppContext();
+  const {
+    visibleEntries,
+    user,
+    updateEntry,
+    deleteEntry,
+    removeAttachmentFromEntry,
+    notify,
+    addAuditLog
+  } = useAppContext();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState("");
   const [project, setProject] = useState("All Projects");
   const [activityType, setActivityType] = useState("All Types");
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [editTargetId, setEditTargetId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ActivityEntry | null>(null);
+  const [deleteText, setDeleteText] = useState("");
+
+  const isAdmin = user?.role === "Admin";
 
   useEffect(() => {
     const openId = searchParams.get("entry");
-    if (openId) setSelectedId(openId);
+    if (openId) {
+      setSelectedId(openId);
+      setEditTargetId(null);
+    }
   }, [searchParams]);
 
   const projects = useMemo(
@@ -52,7 +69,7 @@ export default function ActivitiesPage() {
 
   const totalParticipants = filtered.reduce((sum, entry) => sum + entry.grandTotal, 0);
   const totalBudget = filtered.reduce((sum, entry) => sum + entry.totalBudget, 0);
-  const selectedEntry = filtered.find((entry) => entry.uniqueId === selectedId) || null;
+  const selectedEntry = visibleEntries.find((entry) => entry.uniqueId === selectedId) || null;
 
   const startIndex = (page - 1) * PAGE_SIZE;
   const pagedRows = filtered.slice(startIndex, startIndex + PAGE_SIZE);
@@ -90,6 +107,24 @@ export default function ActivitiesPage() {
     anchor.download = "activities.csv";
     anchor.click();
     URL.revokeObjectURL(url);
+  };
+
+  const requestDelete = (entry: ActivityEntry) => {
+    setDeleteTarget(entry);
+    setDeleteText("");
+  };
+
+  const confirmDelete = () => {
+    if (!deleteTarget || deleteText.trim().toUpperCase() !== "DELETE") return;
+    deleteEntry(deleteTarget.uniqueId);
+    addAuditLog("Deleted Entry", "My Activity", deleteTarget.uniqueId, "Deleted by admin confirmation");
+    notify(`Entry deleted: ${deleteTarget.uniqueId}`, "success");
+    setDeleteTarget(null);
+    setDeleteText("");
+    if (selectedId === deleteTarget.uniqueId) {
+      setSelectedId(null);
+      setEditTargetId(null);
+    }
   };
 
   return (
@@ -192,11 +227,15 @@ export default function ActivitiesPage() {
               <tr
                 key={entry.uniqueId}
                 className="entry-row-clickable"
-                onClick={() => setSelectedId(entry.uniqueId)}
+                onClick={() => {
+                  setSelectedId(entry.uniqueId);
+                  setEditTargetId(null);
+                }}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") {
                     event.preventDefault();
                     setSelectedId(entry.uniqueId);
+                    setEditTargetId(null);
                   }
                 }}
                 tabIndex={0}
@@ -227,16 +266,45 @@ export default function ActivitiesPage() {
                 </td>
                 <td>{entry.createdBy}</td>
                 <td className="text-end">
-                  <button
-                    className="icon-btn"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      setSelectedId(entry.uniqueId);
-                    }}
-                    aria-label="Open details"
-                  >
-                    <i className="bi bi-eye" />
-                  </button>
+                  <div className="d-flex gap-2 justify-content-end">
+                    <button
+                      className="icon-btn"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setSelectedId(entry.uniqueId);
+                        setEditTargetId(null);
+                      }}
+                      aria-label="Open details"
+                    >
+                      <i className="bi bi-eye" />
+                    </button>
+                    {isAdmin && (
+                      <>
+                        <button
+                          className="icon-btn"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setSelectedId(entry.uniqueId);
+                            setEditTargetId(entry.uniqueId);
+                            notify("Warning: you are editing live submitted data.", "info");
+                          }}
+                          aria-label="Edit entry"
+                        >
+                          <i className="bi bi-pencil-square" />
+                        </button>
+                        <button
+                          className="icon-btn"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            requestDelete(entry);
+                          }}
+                          aria-label="Delete entry"
+                        >
+                          <i className="bi bi-trash" />
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
@@ -249,11 +317,15 @@ export default function ActivitiesPage() {
           <article
             key={entry.uniqueId}
             className="entry-mobile-card"
-            onClick={() => setSelectedId(entry.uniqueId)}
+            onClick={() => {
+              setSelectedId(entry.uniqueId);
+              setEditTargetId(null);
+            }}
             onKeyDown={(event) => {
               if (event.key === "Enter" || event.key === " ") {
                 event.preventDefault();
                 setSelectedId(entry.uniqueId);
+                setEditTargetId(null);
               }
             }}
             tabIndex={0}
@@ -280,13 +352,102 @@ export default function ActivitiesPage() {
               </span>
               <span>Submitted By: {entry.createdBy}</span>
             </div>
+            <div className="d-flex gap-2 mt-2">
+              <button
+                className="outline-btn flex-fill"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setSelectedId(entry.uniqueId);
+                  setEditTargetId(null);
+                }}
+              >
+                <i className="bi bi-eye" /> View
+              </button>
+              {isAdmin && (
+                <>
+                  <button
+                    className="outline-btn flex-fill"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setSelectedId(entry.uniqueId);
+                      setEditTargetId(entry.uniqueId);
+                      notify("Warning: you are editing live submitted data.", "info");
+                    }}
+                  >
+                    <i className="bi bi-pencil-square" /> Edit
+                  </button>
+                  <button
+                    className="danger-outline flex-fill"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      requestDelete(entry);
+                    }}
+                  >
+                    <i className="bi bi-trash" /> Delete
+                  </button>
+                </>
+              )}
+            </div>
           </article>
         ))}
       </section>
 
       <Pagination page={page} total={filtered.length} pageSize={PAGE_SIZE} onPageChange={setPage} />
 
-      {selectedEntry && <EntryDetailsModal entry={selectedEntry} onClose={() => setSelectedId(null)} />}
+      {selectedEntry && (
+        <EntryDetailsModal
+          entry={selectedEntry}
+          onClose={() => {
+            setSelectedId(null);
+            setEditTargetId(null);
+          }}
+          canManage={isAdmin}
+          initialEditMode={isAdmin && editTargetId === selectedEntry.uniqueId}
+          onUpdateEntry={(id, updates) => {
+            updateEntry(id, updates);
+            addAuditLog("Updated Entry", "My Activity", id, "Entry edited by admin");
+            notify(`Entry updated: ${id}`, "success");
+          }}
+          onDeleteEntry={(id) => {
+            deleteEntry(id);
+            addAuditLog("Deleted Entry", "My Activity", id, "Entry deleted from preview dialog");
+            notify(`Entry deleted: ${id}`, "success");
+          }}
+          onRemoveAttachment={(entryId, attachmentId) => {
+            removeAttachmentFromEntry(entryId, attachmentId);
+            addAuditLog("Deleted Attachment", "My Activity", entryId, `Attachment removed: ${attachmentId}`);
+            notify("Attachment removed.", "success");
+          }}
+        />
+      )}
+
+      {deleteTarget && (
+        <div className="modal-overlay" role="dialog" aria-modal="true">
+          <div className="panel-card delete-confirm-card">
+            <h3 className="h5 mb-2">Delete Entry</h3>
+            <p className="mb-2 text-danger fw-semibold">
+              Warning: {deleteTarget.uniqueId} will be permanently deleted.
+            </p>
+            <p className="small text-muted mb-2">
+              Type <strong>DELETE</strong> to confirm.
+            </p>
+            <input
+              className="form-control premium-input mb-3"
+              placeholder="Type DELETE"
+              value={deleteText}
+              onChange={(event) => setDeleteText(event.target.value)}
+            />
+            <div className="d-flex gap-2 justify-content-end">
+              <button className="outline-btn" onClick={() => setDeleteTarget(null)}>
+                Cancel
+              </button>
+              <button className="danger-outline" onClick={confirmDelete} disabled={deleteText.trim().toUpperCase() !== "DELETE"}>
+                <i className="bi bi-trash3" /> Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

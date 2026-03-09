@@ -76,6 +76,9 @@ type AppContextValue = {
   setReportSettings: (settings: ReportSettings) => void;
   notify: (message: string, tone?: PopupTone) => void;
   addEntry: (entry: ActivityEntry) => void;
+  updateEntry: (id: string, updates: Partial<ActivityEntry>) => void;
+  deleteEntry: (id: string) => void;
+  removeAttachmentFromEntry: (entryId: string, attachmentId: string) => void;
   addAuditLog: (action: string, module: string, targetId: string, notes: string) => void;
   updateEntryStatus: (id: string, status: EntryStatus) => void;
   markNotificationRead: (id: string) => void;
@@ -94,7 +97,17 @@ const AVAILABLE_THEMES: ThemeMode[] = [
   "sunset",
   "mono"
 ];
-const REMOTE_DATA_MODE = process.env.NEXT_PUBLIC_DATA_MODE === "cloudflare";
+const getRemoteDataMode = () => {
+  if (process.env.NEXT_PUBLIC_DATA_MODE === "cloudflare") return true;
+  if (process.env.NEXT_PUBLIC_DATA_MODE === "local") return false;
+  if (typeof window !== "undefined") {
+    const host = window.location.hostname.toLowerCase();
+    const isLocalHost =
+      host === "localhost" || host === "127.0.0.1" || host === "0.0.0.0" || host.endsWith(".local");
+    return !isLocalHost;
+  }
+  return false;
+};
 
 const AppContext = createContext<AppContextValue | undefined>(undefined);
 
@@ -107,7 +120,8 @@ const cloneUsers = (list: AppUser[]): AppUser[] =>
 const cloneProjectMap = (map: ProjectActivityMap[]): ProjectActivityMap[] =>
   map.map((item) => ({
     project: item.project,
-    activities: item.activities.map((activity) => ({ ...activity })),
+    locked: Boolean(item.locked),
+    activities: item.activities.map((activity) => ({ ...activity, locked: Boolean(activity.locked) })),
     participantCategories: item.participantCategories.map((category) => ({ ...category }))
   }));
 
@@ -172,6 +186,7 @@ const getClientMeta = () => {
 };
 
 export const AppContextProvider = ({ children }: { children: React.ReactNode }) => {
+  const REMOTE_DATA_MODE = getRemoteDataMode();
   const [user, setUser] = useState<AppUser | null>(null);
   const [users, setUsersState] = useState<AppUser[]>(cloneUsers(defaultUsers));
   const [loginLogs, setLoginLogs] = useState<LoginLog[]>(defaultLoginLogs.map((item) => ({ ...item })));
@@ -202,7 +217,7 @@ export const AppContextProvider = ({ children }: { children: React.ReactNode }) 
           const response = await fetch("/api/state", { cache: "no-store" });
           if (response.ok) {
             const payload = await response.json();
-            if (payload?.state && typeof payload.state === "object") {
+            if (payload?.ok && payload?.state && typeof payload.state === "object") {
               state = normalizePersistedState(payload.state as Partial<PersistedState>, state);
               savePersistedState(state);
             }
@@ -249,7 +264,7 @@ export const AppContextProvider = ({ children }: { children: React.ReactNode }) 
     return () => {
       disposed = true;
     };
-  }, []);
+  }, [REMOTE_DATA_MODE]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -275,11 +290,14 @@ export const AppContextProvider = ({ children }: { children: React.ReactNode }) 
     if (remoteSyncTimer.current) window.clearTimeout(remoteSyncTimer.current);
     remoteSyncTimer.current = window.setTimeout(async () => {
       try {
-        await fetch("/api/state", {
+        const response = await fetch("/api/state", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ state: snapshot })
         });
+        if (!response.ok) {
+          throw new Error(`State sync failed with status ${response.status}`);
+        }
       } catch (error) {
         console.warn("Cloudflare state sync failed", error);
       }
@@ -296,7 +314,8 @@ export const AppContextProvider = ({ children }: { children: React.ReactNode }) 
     implementedByOptions,
     venueOptions,
     orgSettings,
-    reportSettings
+    reportSettings,
+    REMOTE_DATA_MODE
   ]);
 
   useEffect(() => {
@@ -448,6 +467,43 @@ export const AppContextProvider = ({ children }: { children: React.ReactNode }) 
     ]);
   };
 
+  const updateEntry = (id: string, updates: Partial<ActivityEntry>) => {
+    setEntries((prev) =>
+      prev.map((entry) => {
+        if (entry.uniqueId !== id) return entry;
+        const totalBudget = updates.totalBudget ?? entry.totalBudget;
+        const totalExpenses = updates.totalExpenses ?? entry.totalExpenses;
+        return {
+          ...entry,
+          ...updates,
+          totalBudget,
+          totalExpenses,
+          variance: calcVariance(totalBudget, totalExpenses),
+          updatedAt: new Date().toISOString()
+        };
+      })
+    );
+  };
+
+  const deleteEntry = (id: string) => {
+    setEntries((prev) => prev.filter((entry) => entry.uniqueId !== id));
+    setNotifications((prev) => prev.filter((note) => note.entryId !== id));
+  };
+
+  const removeAttachmentFromEntry = (entryId: string, attachmentId: string) => {
+    setEntries((prev) =>
+      prev.map((entry) =>
+        entry.uniqueId === entryId
+          ? {
+              ...entry,
+              attachments: entry.attachments.filter((item) => item.id !== attachmentId),
+              updatedAt: new Date().toISOString()
+            }
+          : entry
+      )
+    );
+  };
+
   const notify = (message: string, tone: PopupTone = "success") => {
     if (popupTimer.current) window.clearTimeout(popupTimer.current);
     setPopup({ message, tone });
@@ -536,6 +592,9 @@ export const AppContextProvider = ({ children }: { children: React.ReactNode }) 
         setReportSettings,
         notify,
         addEntry,
+        updateEntry,
+        deleteEntry,
+        removeAttachmentFromEntry,
         addAuditLog,
         updateEntryStatus,
         markNotificationRead,

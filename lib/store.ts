@@ -46,7 +46,8 @@ const hasWindow = typeof window !== "undefined";
 const cloneProjectMap = (map: ProjectActivityMap[]): ProjectActivityMap[] =>
   map.map((item) => ({
     project: item.project,
-    activities: item.activities.map((activity) => ({ ...activity })),
+    locked: Boolean(item.locked),
+    activities: item.activities.map((activity) => ({ ...activity, locked: Boolean(activity.locked) })),
     participantCategories: item.participantCategories.map((category) => ({ ...category }))
   }));
 

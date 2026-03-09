@@ -72,6 +72,7 @@ export const NewActivityForm = () => {
   const [successEntry, setSuccessEntry] = useState<ActivityEntry | null>(null);
   const [open, setOpen] = useState({ info: true, participants: true, financial: true, uploads: true });
 
+  const availableProjects = useMemo(() => projectMap.filter((item) => !item.locked), [projectMap]);
   const selectedProjectMap = projectMap.find((item) => item.project === form.project);
   const selectedDistrictMap = locationMap.find((item) => item.district === form.district);
   const upazilaList = selectedDistrictMap ? selectedDistrictMap.upazilas.map((item) => item.name) : [];
@@ -89,8 +90,8 @@ export const NewActivityForm = () => {
 
   const addVenueChoice = (value: string) => { const item = value.trim(); if (item && !venueOptions.includes(item)) setVenueOptions([...venueOptions, item]); };
   const addImplementedByChoice = (value: string) => { const item = value.trim(); if (item && !implementedByOptions.includes(item)) setImplementedByOptions([...implementedByOptions, item]); };
-  const setProject = (project: string) => { const map = projectMap.find((item) => item.project === project); const firstActivity = map?.activities[0]; setForm((prev) => ({ ...prev, project, activityName: firstActivity?.name || "", activityCode: firstActivity?.code || "", activityType: firstActivity?.type || "" })); setParticipants(project ? initParticipants(projectMap, project) : []); };
-  const setActivity = (activityName: string) => { if (!selectedProjectMap) return; const selected = selectedProjectMap.activities.find((item) => item.name === activityName); setForm((prev) => ({ ...prev, activityName: selected?.name || "", activityCode: selected?.code || "", activityType: selected?.type || "" })); };
+  const setProject = (project: string) => { const map = projectMap.find((item) => item.project === project && !item.locked); const firstActivity = map?.activities.find((activity) => !activity.locked); setForm((prev) => ({ ...prev, project: map?.project || "", activityName: firstActivity?.name || "", activityCode: firstActivity?.code || "", activityType: firstActivity?.type || "" })); setParticipants(map?.project ? initParticipants(projectMap, map.project) : []); };
+  const setActivity = (activityName: string) => { if (!selectedProjectMap) return; const selected = selectedProjectMap.activities.find((item) => item.name === activityName && !item.locked); setForm((prev) => ({ ...prev, activityName: selected?.name || "", activityCode: selected?.code || "", activityType: selected?.type || "" })); };
   const setDistrict = (district: string) => { if (!district) { setForm((prev) => ({ ...prev, district: "", upazila: "", union: "" })); return; } const selected = locationMap.find((item) => item.district === district); const firstUpazila = selected?.upazilas[0]; setForm((prev) => ({ ...prev, district, upazila: firstUpazila?.name || "", union: firstUpazila?.unions[0] || "" })); };
   const setUpazila = (upazila: string) => { if (!selectedDistrictMap || !upazila) { setForm((prev) => ({ ...prev, upazila: "", union: "" })); return; } const selected = selectedDistrictMap.upazilas.find((item) => item.name === upazila); setForm((prev) => ({ ...prev, upazila: selected?.name || "", union: selected?.unions[0] || "" })); };
   const updateCount = (key: string, field: "male" | "female", value: number) => setParticipants((prev) => prev.map((row) => (row.categoryKey === key ? { ...row, [field]: Math.max(0, value) } : row)));
@@ -203,14 +204,15 @@ export const NewActivityForm = () => {
                       <label className="form-label">Project *</label>
                       <select className="form-select premium-input" value={form.project} onChange={(e) => setProject(e.target.value)}>
                         <option value="">Select project</option>
-                        {projectMap.map((item) => <option key={item.project} value={item.project}>{item.project}</option>)}
+                        {projectMap.map((item) => <option key={item.project} value={item.project} disabled={item.locked}>{item.project}{item.locked ? " (Locked)" : ""}</option>)}
                       </select>
+                      {!availableProjects.length && <small className="text-danger">All projects are currently locked by admin.</small>}
                     </div>
                     <div className="col-md-4">
                       <label className="form-label">Activity *</label>
                       <select className="form-select premium-input" value={form.activityName} onChange={(e) => setActivity(e.target.value)} disabled={!selectedProjectMap}>
                         <option value="">{selectedProjectMap ? "Select activity" : "Select project first"}</option>
-                        {selectedProjectMap?.activities.map((item) => <option key={item.name} value={item.name}>{item.name}</option>)}
+                        {selectedProjectMap?.activities.map((item) => <option key={item.name} value={item.name} disabled={item.locked}>{item.name}{item.locked ? " (Locked)" : ""}</option>)}
                       </select>
                     </div>
                     <div className="col-md-4"><label className="form-label">Activity Code *</label><input className="form-control premium-input" value={form.activityCode} readOnly /></div>
@@ -353,9 +355,9 @@ export const NewActivityForm = () => {
                         <label className="upload-zone"><i className="bi bi-upload" /> Upload<input type="file" multiple className="d-none" onChange={(e) => onFileChange(category, e.target.files)} /></label>
                         <div className="d-grid gap-2 mt-2">
                           {filesByCategory[category].map((item, index) => (
-                            <div className="file-chip" key={`${item.file.name}-${index}`}>
+                            <div className={clsx("file-chip", item.previewUrl && "file-chip-image")} key={`${item.file.name}-${index}`}>
                               <div className="file-chip-main">
-                                <span className="file-mini-thumb">
+                                <span className={clsx("file-mini-thumb", item.previewUrl && "file-mini-thumb-large-doc")}>
                                   {item.previewUrl ? (
                                     <img src={item.previewUrl} alt={item.file.name} />
                                   ) : (

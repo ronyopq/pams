@@ -3,11 +3,23 @@
 import { useMemo, useState } from "react";
 import { useAppContext } from "@/components/providers/app-context";
 import { formatDate, normalizeText } from "@/lib/format";
-import { getFileIconClass, isImageFileName } from "@/lib/file-icons";
+import { downloadAttachment, getAttachmentPreviewSrc, openAttachment } from "@/lib/file-actions";
+import { getFileIconClass } from "@/lib/file-icons";
+import { ActivityAttachment } from "@/lib/types";
+
+type FileWithContext = ActivityAttachment & {
+  entryId: string;
+  date: string;
+  project: string;
+  activity: string;
+};
 
 export default function FilesPage() {
-  const { visibleEntries } = useAppContext();
+  const { visibleEntries, user, removeAttachmentFromEntry, addAuditLog, notify } = useAppContext();
   const [query, setQuery] = useState("");
+  const [previewFile, setPreviewFile] = useState<FileWithContext | null>(null);
+
+  const isAdmin = user?.role === "Admin";
 
   const files = useMemo(() => {
     const list = visibleEntries.flatMap((entry) =>
@@ -49,47 +61,101 @@ export default function FilesPage() {
         </div>
       </section>
 
-      <section className="file-library-grid">
+      <section className="file-library-grid file-library-grid-wide">
         {files.map((file) => (
-          <article key={file.id + file.entryId} className="panel-card d-grid gap-2">
-            <div className="d-flex justify-content-between align-items-start gap-2">
-              <div className="d-flex gap-2 align-items-start">
-                <span className="file-thumb">
-                  {(file.type === "image" || isImageFileName(file.name)) && file.url !== "#" ? (
-                    <img src={file.url} alt={file.name} />
-                  ) : (
-                    <i className={`bi ${getFileIconClass(file.name)} file-type-icon-large`} />
-                  )}
-                </span>
-                <div>
-                <p className="mb-1 fw-semibold text-truncate maxw-220">{file.name}</p>
-                <small className="text-muted">{file.category}</small>
-                </div>
-              </div>
-              <span className="soft-badge">{Math.max(1, file.sizeKb)} KB</span>
+          <article key={file.id + file.entryId} className="panel-card file-library-card">
+            <div className="file-library-thumb">
+              {file.type === "image" ? (
+                <img src={getAttachmentPreviewSrc(file)} alt={file.name} />
+              ) : (
+                <i className={`bi ${getFileIconClass(file.name)} file-type-icon-xxl`} />
+              )}
             </div>
 
-            <small className="text-muted">
-              {file.entryId} - {formatDate(file.date)}
-            </small>
-            <small className="text-muted text-truncate">
-              {file.project} - {file.activity}
-            </small>
+            <div className="file-library-body">
+              <div className="d-flex justify-content-between align-items-start gap-2">
+                <div className="min-w-0">
+                  <p className="mb-1 fw-semibold text-truncate">{file.name}</p>
+                  <small className="text-muted d-block">{file.category}</small>
+                  <small className="text-muted d-block">
+                    {file.entryId} - {formatDate(file.date)}
+                  </small>
+                  <small className="text-muted d-block text-truncate">
+                    {file.project} - {file.activity}
+                  </small>
+                </div>
+                <span className="soft-badge">{Math.max(1, file.sizeKb)} KB</span>
+              </div>
 
-            <div className="d-flex gap-2 mt-1">
-              <button className="outline-btn flex-fill">
-                <i className="bi bi-eye" /> Preview
-              </button>
-              <button className="outline-btn flex-fill">
-                <i className="bi bi-box-arrow-up-right" /> Open
-              </button>
-              <button className="primary-btn flex-fill">
-                <i className="bi bi-download" /> Download
-              </button>
+              <div className="d-flex gap-2 mt-3 flex-wrap">
+                <button className="outline-btn" onClick={() => setPreviewFile(file)}>
+                  <i className="bi bi-eye" /> Preview
+                </button>
+                <button className="outline-btn" onClick={() => openAttachment(file)}>
+                  <i className="bi bi-box-arrow-up-right" /> Open
+                </button>
+                <button className="primary-btn" onClick={() => downloadAttachment(file)}>
+                  <i className="bi bi-download" /> Download
+                </button>
+                {isAdmin && (
+                  <button
+                    className="danger-outline"
+                    onClick={() => {
+                      removeAttachmentFromEntry(file.entryId, file.id);
+                      addAuditLog("Deleted File", "Files", file.entryId, `Removed attachment: ${file.name}`);
+                      notify(`Attachment deleted: ${file.name}`, "success");
+                      if (previewFile?.id === file.id && previewFile.entryId === file.entryId) {
+                        setPreviewFile(null);
+                      }
+                    }}
+                  >
+                    <i className="bi bi-trash" /> Delete
+                  </button>
+                )}
+              </div>
             </div>
           </article>
         ))}
       </section>
+
+      {previewFile && (
+        <div className="modal-overlay" role="dialog" aria-modal="true">
+          <div className="panel-card file-preview-modal">
+            <div className="d-flex justify-content-between align-items-start gap-2 mb-3">
+              <div className="min-w-0">
+                <h3 className="h5 mb-1 text-truncate">{previewFile.name}</h3>
+                <p className="text-muted mb-0">
+                  {previewFile.category} - {previewFile.entryId}
+                </p>
+              </div>
+              <button className="icon-btn" onClick={() => setPreviewFile(null)} aria-label="Close preview">
+                <i className="bi bi-x-lg" />
+              </button>
+            </div>
+
+            <div className="file-preview-stage">
+              {previewFile.type === "image" ? (
+                <img src={getAttachmentPreviewSrc(previewFile)} alt={previewFile.name} />
+              ) : (
+                <div className="file-preview-doc">
+                  <i className={`bi ${getFileIconClass(previewFile.name)} file-type-icon-xxl`} />
+                  <p className="mb-0 mt-2">Preview is not available for this file type in-browser.</p>
+                </div>
+              )}
+            </div>
+
+            <div className="d-flex gap-2 justify-content-end mt-3">
+              <button className="outline-btn" onClick={() => openAttachment(previewFile)}>
+                <i className="bi bi-box-arrow-up-right" /> Open
+              </button>
+              <button className="primary-btn" onClick={() => downloadAttachment(previewFile)}>
+                <i className="bi bi-download" /> Download
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+

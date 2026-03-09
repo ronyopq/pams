@@ -9,7 +9,8 @@ import { useAppContext } from "@/components/providers/app-context";
 import { formatCurrency } from "@/lib/format";
 
 export default function DashboardPage() {
-  const { visibleEntries, user } = useAppContext();
+  const { visibleEntries, user, updateEntry, deleteEntry, removeAttachmentFromEntry, addAuditLog, notify } =
+    useAppContext();
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
 
   const selectedEntry = useMemo(
@@ -39,7 +40,28 @@ export default function DashboardPage() {
 
       <ActivityCalendar entries={visibleEntries} onEventSelect={setSelectedEntryId} />
 
-      {selectedEntry && <EntryDetailsModal entry={selectedEntry} onClose={() => setSelectedEntryId(null)} />}
+      {selectedEntry && (
+        <EntryDetailsModal
+          entry={selectedEntry}
+          onClose={() => setSelectedEntryId(null)}
+          canManage={user?.role === "Admin"}
+          onUpdateEntry={(id, updates) => {
+            updateEntry(id, updates);
+            addAuditLog("Updated Entry", "Dashboard", id, "Entry edited from dashboard");
+            notify(`Entry updated: ${id}`, "success");
+          }}
+          onDeleteEntry={(id) => {
+            deleteEntry(id);
+            addAuditLog("Deleted Entry", "Dashboard", id, "Entry deleted from dashboard");
+            notify(`Entry deleted: ${id}`, "success");
+          }}
+          onRemoveAttachment={(entryId, attachmentId) => {
+            removeAttachmentFromEntry(entryId, attachmentId);
+            addAuditLog("Deleted Attachment", "Dashboard", entryId, `Attachment removed: ${attachmentId}`);
+            notify("Attachment removed.", "success");
+          }}
+        />
+      )}
     </div>
   );
 }
