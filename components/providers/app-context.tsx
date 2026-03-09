@@ -15,7 +15,13 @@ import {
   venueOptions as defaultVenueOptions
 } from "@/lib/mockData";
 import { calcVariance } from "@/lib/format";
-import { getPersistedState, savePersistedState, visibleEntries } from "@/lib/store";
+import {
+  getPersistedState,
+  normalizePersistedState,
+  savePersistedState,
+  visibleEntries,
+  PersistedState
+} from "@/lib/store";
 import {
   ActivityEntry,
   AuditLog,
@@ -88,6 +94,7 @@ const AVAILABLE_THEMES: ThemeMode[] = [
   "sunset",
   "mono"
 ];
+const REMOTE_DATA_MODE = process.env.NEXT_PUBLIC_DATA_MODE === "cloudflare";
 
 const AppContext = createContext<AppContextValue | undefined>(undefined);
 
@@ -181,40 +188,73 @@ export const AppContextProvider = ({ children }: { children: React.ReactNode }) 
   const [reportSettings, setReportSettingsState] = useState<ReportSettings>(cloneReportSettings(defaultReportSettings));
   const [popup, setPopup] = useState<{ message: string; tone: PopupTone } | null>(null);
   const popupTimer = useRef<number | null>(null);
+  const remoteSyncTimer = useRef<number | null>(null);
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    const state = getPersistedState();
-    setEntries(state.entries);
-    setNotifications(state.notifications);
-    setLoginLogs(state.loginLogs);
-    setAuditLogs(state.auditLogs);
-    setUsersState(cloneUsers(state.users));
-    setProjectMapState(cloneProjectMap(state.projectMap));
-    setLocationMapState(cloneLocationMap(state.locationMap));
-    setImplementedByOptionsState([...state.implementedByOptions]);
-    setVenueOptionsState([...state.venueOptions]);
-    setOrgSettingsState(cloneOrgSettings(state.orgSettings));
-    setReportSettingsState(cloneReportSettings(state.reportSettings));
+    let disposed = false;
 
-    const storedUsername = window.localStorage.getItem(SESSION_KEY);
-    if (storedUsername) {
-      const found = state.users.find((item) => item.username === storedUsername);
-      if (found && found.active) setUser(found);
-    }
+    const loadInitialState = async () => {
+      let state = getPersistedState();
 
-    const storedTheme = window.localStorage.getItem(THEME_KEY) as ThemeMode | "dark" | "light" | null;
-    if (storedTheme === "dark") setThemeState("corporate-dark");
-    else if (storedTheme === "light") setThemeState("corporate-light");
-    else if (storedTheme && AVAILABLE_THEMES.includes(storedTheme as ThemeMode)) {
-      setThemeState(storedTheme as ThemeMode);
-    }
+      if (REMOTE_DATA_MODE) {
+        try {
+          const response = await fetch("/api/state", { cache: "no-store" });
+          if (response.ok) {
+            const payload = await response.json();
+            if (payload?.state && typeof payload.state === "object") {
+              state = normalizePersistedState(payload.state as Partial<PersistedState>, state);
+              savePersistedState(state);
+            }
+          }
+        } catch (error) {
+          console.warn("Cloudflare state bootstrap failed, fallback to local cache.", error);
+        }
+      }
 
-    const storedLang = window.localStorage.getItem(LANGUAGE_KEY);
-    if (storedLang === "bn") setLanguage("bn");
+      if (disposed) return;
+
+      setEntries(state.entries);
+      setNotifications(state.notifications);
+      setLoginLogs(state.loginLogs);
+      setAuditLogs(state.auditLogs);
+      setUsersState(cloneUsers(state.users));
+      setProjectMapState(cloneProjectMap(state.projectMap));
+      setLocationMapState(cloneLocationMap(state.locationMap));
+      setImplementedByOptionsState([...state.implementedByOptions]);
+      setVenueOptionsState([...state.venueOptions]);
+      setOrgSettingsState(cloneOrgSettings(state.orgSettings));
+      setReportSettingsState(cloneReportSettings(state.reportSettings));
+
+      const storedUsername = window.localStorage.getItem(SESSION_KEY);
+      if (storedUsername) {
+        const found = state.users.find((item) => item.username === storedUsername);
+        if (found && found.active) setUser(found);
+      }
+
+      const storedTheme = window.localStorage.getItem(THEME_KEY) as ThemeMode | "dark" | "light" | null;
+      if (storedTheme === "dark") setThemeState("corporate-dark");
+      else if (storedTheme === "light") setThemeState("corporate-light");
+      else if (storedTheme && AVAILABLE_THEMES.includes(storedTheme as ThemeMode)) {
+        setThemeState(storedTheme as ThemeMode);
+      }
+
+      const storedLang = window.localStorage.getItem(LANGUAGE_KEY);
+      if (storedLang === "bn") setLanguage("bn");
+      setHydrated(true);
+    };
+
+    loadInitialState();
+
+    return () => {
+      disposed = true;
+    };
   }, []);
 
   useEffect(() => {
-    savePersistedState({
+    if (!hydrated) return;
+
+    const snapshot: PersistedState = {
       entries,
       notifications,
       loginLogs,
@@ -226,8 +266,26 @@ export const AppContextProvider = ({ children }: { children: React.ReactNode }) 
       venueOptions,
       orgSettings,
       reportSettings
-    });
+    };
+
+    savePersistedState(snapshot);
+
+    if (!REMOTE_DATA_MODE) return;
+
+    if (remoteSyncTimer.current) window.clearTimeout(remoteSyncTimer.current);
+    remoteSyncTimer.current = window.setTimeout(async () => {
+      try {
+        await fetch("/api/state", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ state: snapshot })
+        });
+      } catch (error) {
+        console.warn("Cloudflare state sync failed", error);
+      }
+    }, 650);
   }, [
+    hydrated,
     entries,
     notifications,
     loginLogs,
@@ -267,6 +325,7 @@ export const AppContextProvider = ({ children }: { children: React.ReactNode }) 
   useEffect(
     () => () => {
       if (popupTimer.current) window.clearTimeout(popupTimer.current);
+      if (remoteSyncTimer.current) window.clearTimeout(remoteSyncTimer.current);
     },
     []
   );
