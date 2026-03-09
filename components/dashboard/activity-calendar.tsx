@@ -1,6 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import FullCalendar from "@fullcalendar/react";
+import dayGridPlugin from "@fullcalendar/daygrid";
+import interactionPlugin from "@fullcalendar/interaction";
 import { ActivityEntry } from "@/lib/types";
 import { formatDate } from "@/lib/format";
 
@@ -9,111 +12,70 @@ type Props = {
   onEventSelect?: (id: string) => void;
 };
 
-const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
 export const ActivityCalendar = ({ entries, onEventSelect }: Props) => {
-  const [currentMonth, setCurrentMonth] = useState(() => {
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), 1);
-  });
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().slice(0, 10));
 
-  const cells = useMemo(() => {
-    const firstDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
-    const lastDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
-    const start = firstDay.getDay();
-    const total = lastDay.getDate();
-
-    const result: Array<{ day: number | null; dateKey: string | null; entries: ActivityEntry[] }> = [];
-
-    for (let i = 0; i < start; i += 1) {
-      result.push({ day: null, dateKey: null, entries: [] });
-    }
-
-    for (let day = 1; day <= total; day += 1) {
-      const key = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)
-        .toISOString()
-        .slice(0, 10);
-      const dayEntries = entries.filter((entry) => entry.date === key);
-      result.push({ day, dateKey: key, entries: dayEntries });
-    }
-
-    while (result.length % 7 !== 0) result.push({ day: null, dateKey: null, entries: [] });
-    return result;
-  }, [currentMonth, entries]);
+  const events = useMemo(() => {
+    return entries.map((entry) => ({
+      id: entry.uniqueId,
+      title: entry.activityName,
+      start: entry.date,
+      classNames: [`event-status-${entry.status.toLowerCase()}`],
+      extendedProps: {
+        project: entry.project,
+        status: entry.status,
+        participants: entry.grandTotal
+      }
+    }));
+  }, [entries]);
 
   const selectedEntries = useMemo(() => {
     if (!selectedDate) return [];
     return entries.filter((entry) => entry.date === selectedDate);
   }, [entries, selectedDate]);
 
+  const totalEvents = entries.length;
+  const uniqueDays = new Set(entries.map((entry) => entry.date)).size;
+
   return (
-    <div className="panel-card calendar-modern">
-      <div className="panel-head align-items-center calendar-modern-head">
+    <div className="panel-card calendar-pro">
+      <div className="calendar-pro-head">
         <div>
-          <h3 className="panel-title mb-0">Activity Calendar</h3>
-          <p className="text-muted mb-0 small">Click any date to see the activity list and open details.</p>
+          <h3 className="panel-title mb-1">Activity Calendar</h3>
+          <p className="text-muted mb-0 small">Click a date or event to view entries and open details.</p>
         </div>
-        <div className="d-flex gap-2">
-          <button
-            className="outline-btn"
-            onClick={() => setCurrentMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
-          >
-            <i className="bi bi-chevron-left" />
-          </button>
-          <strong className="small text-nowrap px-1">
-            {currentMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
-          </strong>
-          <button
-            className="outline-btn"
-            onClick={() =>
-              setCurrentMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))
-            }
-          >
-            <i className="bi bi-chevron-right" />
-          </button>
+        <div className="calendar-pro-stats">
+          <span className="soft-badge">{totalEvents} Total Events</span>
+          <span className="soft-badge">{uniqueDays} Active Days</span>
         </div>
       </div>
 
-      <div className="calendar-modern-layout">
-        <div>
-          <div className="calendar-grid week-header mt-2">
-            {weekDays.map((day) => (
-              <div key={day} className="calendar-cell cell-head">
-                {day}
-              </div>
-            ))}
-          </div>
-
-          <div className="calendar-grid">
-            {cells.map((cell, index) => (
-              <button
-                key={index}
-                className={`calendar-cell calendar-cell-btn ${cell.dateKey === selectedDate ? "active" : ""}`}
-                onClick={() => {
-                  if (!cell.dateKey) return;
-                  setSelectedDate(cell.dateKey);
-                }}
-              >
-                {cell.day && (
-                  <div className="d-flex justify-content-between align-items-center mb-1">
-                    <span className="day-number">{cell.day}</span>
-                    {cell.entries.length > 0 && <span className="calendar-count">{cell.entries.length}</span>}
-                  </div>
-                )}
-                <div className="calendar-dot-row">
-                  {cell.entries.slice(0, 3).map((entry) => (
-                    <span key={entry.uniqueId} className="calendar-dot" />
-                  ))}
-                </div>
-                {cell.entries.length > 0 && <span className="small text-muted text-start">{cell.entries[0].activityType}</span>}
-              </button>
-            ))}
-          </div>
+      <div className="calendar-pro-layout">
+        <div className="calendar-pro-main">
+          <FullCalendar
+            plugins={[dayGridPlugin, interactionPlugin]}
+            initialView="dayGridMonth"
+            height="auto"
+            dayMaxEventRows={2}
+            events={events}
+            headerToolbar={{
+              left: "prev,next today",
+              center: "title",
+              right: "dayGridMonth"
+            }}
+            eventDisplay="block"
+            dateClick={(arg) => setSelectedDate(arg.dateStr)}
+            eventClick={(arg) => {
+              const id = String(arg.event.id || "");
+              const eventDate = arg.event.startStr.slice(0, 10);
+              if (eventDate) setSelectedDate(eventDate);
+              if (id) onEventSelect?.(id);
+            }}
+          />
         </div>
 
-        <aside className="calendar-side-list">
-          <h4 className="h6 mb-2">Selected Date</h4>
+        <aside className="calendar-pro-side">
+          <h4 className="h6 mb-1">Selected Date</h4>
           <p className="text-muted small mb-3">{selectedDate ? formatDate(selectedDate) : "Select any date from calendar."}</p>
           <div className="d-grid gap-2">
             {selectedEntries.length === 0 && <p className="text-muted small mb-0">No entries for selected date.</p>}
@@ -121,6 +83,7 @@ export const ActivityCalendar = ({ entries, onEventSelect }: Props) => {
               <button key={entry.uniqueId} className="calendar-side-item" onClick={() => onEventSelect?.(entry.uniqueId)}>
                 <strong>{entry.activityName}</strong>
                 <span>{entry.project}</span>
+                <span>{entry.activityType}</span>
                 <span className="mono">{entry.uniqueId}</span>
               </button>
             ))}

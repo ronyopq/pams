@@ -597,6 +597,128 @@ a {
   padding: 0.2rem 0.48rem;
 }
 
+.calendar-pro {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.calendar-pro-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+
+.calendar-pro-stats {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.calendar-pro-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 0.8rem;
+}
+
+.calendar-pro-main {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-soft);
+  padding: 0.65rem;
+}
+
+.calendar-pro-side {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-soft);
+  padding: 0.75rem;
+}
+
+.calendar-pro .fc {
+  --fc-border-color: var(--line);
+  --fc-page-bg-color: var(--surface);
+  --fc-neutral-bg-color: var(--surface-soft);
+  --fc-list-event-hover-bg-color: color-mix(in srgb, var(--brand-soft) 55%, var(--surface-soft));
+}
+
+.calendar-pro .fc .fc-toolbar.fc-header-toolbar {
+  margin-bottom: 0.7rem;
+  gap: 0.45rem;
+}
+
+.calendar-pro .fc .fc-toolbar-title {
+  font-family: "IBM Plex Serif", Georgia, serif;
+  font-size: 1.1rem;
+}
+
+.calendar-pro .fc .fc-button {
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: none;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.24rem 0.58rem;
+}
+
+.calendar-pro .fc .fc-button:hover,
+.calendar-pro .fc .fc-button:focus {
+  border-color: color-mix(in srgb, var(--brand) 42%, var(--line));
+  background: color-mix(in srgb, var(--brand-soft) 52%, var(--surface));
+  color: var(--brand);
+}
+
+.calendar-pro .fc .fc-button.fc-button-active {
+  border-color: color-mix(in srgb, var(--brand) 48%, var(--line));
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+
+.calendar-pro .fc .fc-daygrid-day-frame {
+  padding: 0.2rem;
+}
+
+.calendar-pro .fc .fc-daygrid-day-number {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.calendar-pro .fc .fc-daygrid-day.fc-day-today {
+  background: color-mix(in srgb, var(--brand-soft) 35%, var(--surface-soft));
+}
+
+.calendar-pro .fc .fc-daygrid-event {
+  border: 1px solid color-mix(in srgb, var(--brand) 45%, var(--line));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--brand-soft) 70%, var(--surface));
+  color: var(--text);
+  padding: 0.08rem 0.26rem;
+  font-size: 0.72rem;
+}
+
+.calendar-pro .fc .fc-daygrid-event .fc-event-title {
+  font-weight: 600;
+}
+
+.calendar-pro .fc .event-status-submitted {
+  border-color: color-mix(in srgb, var(--success) 55%, var(--line));
+  background: color-mix(in srgb, var(--success-soft) 72%, var(--surface));
+}
+
+.calendar-pro .fc .event-status-reviewed {
+  border-color: color-mix(in srgb, var(--brand) 55%, var(--line));
+  background: color-mix(in srgb, var(--brand-soft) 75%, var(--surface));
+}
+
+.calendar-pro .fc .event-status-draft {
+  border-color: color-mix(in srgb, #c78a19 58%, var(--line));
+  background: color-mix(in srgb, #f8e4b7 58%, var(--surface));
+}
+
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -635,6 +757,112 @@ a {
 
 .entry-modal-body {
   padding: 1.1rem 1.2rem;
+}
+
+.entry-report-sheet {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.entry-report-section {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-soft);
+  padding: 0.85rem;
+}
+
+.entry-report-title {
+  margin: 0 0 0.62rem;
+  font-size: 1rem;
+}
+
+.entry-report-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.entry-kv-card {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  padding: 0.58rem 0.66rem;
+}
+
+.entry-kv-card p {
+  margin: 0 0 0.18rem;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.entry-kv-card strong {
+  font-size: 0.92rem;
+}
+
+.entry-kv-full {
+  grid-column: 1 / -1;
+}
+
+.entry-report-label {
+  margin: 0 0 0.3rem;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.entry-text-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.entry-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.entry-stat {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  padding: 0.62rem;
+}
+
+.entry-stat p {
+  margin: 0 0 0.18rem;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.entry-stat strong {
+  font-size: 1.15rem;
+}
+
+.entry-utilization {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  padding: 0.62rem;
+}
+
+.entry-file-group {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 0.62rem;
+}
+
+.entry-file-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.55rem;
+}
+
+.entry-file-list {
+  display: grid;
+  gap: 0.52rem;
 }
 
 .entry-id {
@@ -2006,6 +2234,9 @@ button.union-chip:hover {
   .detail-grid,
   .summary-tiles,
   .attachment-grid,
+  .entry-report-grid,
+  .entry-text-grid,
+  .entry-stats-grid,
   .file-library-grid,
   .upload-grid,
   .financial-cards,
@@ -2013,7 +2244,8 @@ button.union-chip:hover {
   .admin-kv-grid,
   .location-editor-grid,
   .location-sub-grid,
-  .calendar-modern-layout {
+  .calendar-modern-layout,
+  .calendar-pro-layout {
     grid-template-columns: 1fr;
   }
 

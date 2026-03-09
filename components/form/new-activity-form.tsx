@@ -152,7 +152,13 @@ export const NewActivityForm = () => {
               <div><small>Total Photos</small><p>{successEntry.attachments.filter((item) => item.category === "Photos").length}</p></div>
             </div>
             <div className="d-grid gap-2">
-              <button className="primary-btn w-100" onClick={() => setSuccessEntry(null)}>
+              <button
+                className="primary-btn w-100"
+                onClick={() => {
+                  setSuccessEntry(null);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+              >
                 New Entry
               </button>
               <button

@@ -109,7 +109,7 @@ export const TopNav = () => {
         </Link>
         <div className="d-flex gap-2">
           {(user.role === "Admin" || user.role === "Manager") && (
-            <Link href="/notifications" className="icon-btn text-decoration-none position-relative">
+            <Link href="/notifications" className="icon-btn text-decoration-none position-relative" onClick={() => setMobileOpen(false)}>
               <i className="bi bi-bell" />
               {unreadCount > 0 && <span className="notif-dot">{unreadCount}</span>}
             </Link>
@@ -128,7 +128,7 @@ export const TopNav = () => {
 
       <nav className="mobile-bottom-nav" aria-label="Mobile tab navigation">
         {mobileTabs.map((tab) => (
-          <Link key={tab.href} href={tab.href} className={clsx("mobile-tab", isActivePath(pathname, tab.href) && "active")}>
+          <Link key={tab.href} href={tab.href} onClick={() => setMobileOpen(false)} className={clsx("mobile-tab", isActivePath(pathname, tab.href) && "active")}>
             <i className={`bi ${tab.icon}`} />
             <span>{tab.label}</span>
           </Link>
