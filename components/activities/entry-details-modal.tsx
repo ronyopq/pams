@@ -140,7 +140,7 @@ export const EntryDetailsModal = ({
             <button className="outline-btn" onClick={() => printEntryTextReport(draft)}>
               <i className="bi bi-printer" /> Print
             </button>
-            {canManage && (
+            {canManage && onUpdateEntry && (
               <button
                 className={clsx("outline-btn", editMode && "active")}
                 onClick={() => {
@@ -154,7 +154,7 @@ export const EntryDetailsModal = ({
                 {editMode ? "Cancel Edit" : "Edit"}
               </button>
             )}
-            {canManage && editMode && (
+            {canManage && onUpdateEntry && editMode && (
               <button className="primary-btn" onClick={saveChanges}>
                 <i className="bi bi-save" /> Save Changes
               </button>

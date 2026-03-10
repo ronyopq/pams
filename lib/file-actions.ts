@@ -75,6 +75,12 @@ export const openAttachment = (file: ActivityAttachment) => {
 
 export const downloadAttachment = (file: ActivityAttachment) => {
   if (isUsableUrl(file.url)) {
+    if (file.url.startsWith("/api/file")) {
+      const separator = file.url.includes("?") ? "&" : "?";
+      const encodedName = encodeURIComponent(file.name || "attachment");
+      triggerDownload(`${file.url}${separator}download=1&name=${encodedName}`, file.name);
+      return;
+    }
     triggerDownload(file.url, file.name);
     return;
   }
@@ -89,4 +95,3 @@ export const downloadAttachment = (file: ActivityAttachment) => {
   triggerDownload(url, file.name || `file.${ext(file.name)}`);
   window.setTimeout(() => URL.revokeObjectURL(url), 1200);
 };
-

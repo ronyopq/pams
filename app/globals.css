@@ -587,6 +587,15 @@ a {
   border-color: color-mix(in srgb, var(--brand) 45%, var(--line));
 }
 
+.calendar-side-item strong {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.calendar-side-item span {
+  color: color-mix(in srgb, var(--text) 78%, var(--text-muted));
+}
+
 .calendar-event {
   border: 0;
   border-radius: 999px;
@@ -702,6 +711,11 @@ a {
 
 .calendar-pro .fc .fc-daygrid-event .fc-event-title {
   font-weight: 600;
+  color: var(--text);
+}
+
+.calendar-pro .fc .fc-daygrid-event .fc-event-time {
+  color: var(--text);
 }
 
 .calendar-pro .fc .event-status-submitted {
@@ -717,6 +731,14 @@ a {
 .calendar-pro .fc .event-status-draft {
   border-color: color-mix(in srgb, #c78a19 58%, var(--line));
   background: color-mix(in srgb, #f8e4b7 58%, var(--surface));
+}
+
+[data-theme="corporate-dark"] .calendar-pro-side .text-muted {
+  color: #b9c6da !important;
+}
+
+[data-theme="corporate-dark"] .calendar-side-item span {
+  color: #c9d4e6;
 }
 
 .modal-overlay {

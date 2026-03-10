@@ -8,8 +8,8 @@ import { useAppContext } from "@/components/providers/app-context";
 export default function LoginPage() {
   const router = useRouter();
   const { login, notify } = useAppContext();
-  const [username, setUsername] = useState("admin");
-  const [password, setPassword] = useState("123456");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [nextPath, setNextPath] = useState("/activities/new");
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { EntryDetailsModal } from "@/components/activities/entry-details-modal";
 import { KpiCard } from "@/components/common/kpi-card";
 import { Pagination } from "@/components/common/pagination";
@@ -13,10 +13,10 @@ import { ActivityEntry } from "@/lib/types";
 const PAGE_SIZE = 9;
 
 export default function ActivitiesPage() {
+  const router = useRouter();
   const {
     visibleEntries,
     user,
-    updateEntry,
     deleteEntry,
     removeAttachmentFromEntry,
     notify,
@@ -28,7 +28,6 @@ export default function ActivitiesPage() {
   const [activityType, setActivityType] = useState("All Types");
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [editTargetId, setEditTargetId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ActivityEntry | null>(null);
   const [deleteText, setDeleteText] = useState("");
 
@@ -38,7 +37,6 @@ export default function ActivitiesPage() {
     const openId = searchParams.get("entry");
     if (openId) {
       setSelectedId(openId);
-      setEditTargetId(null);
     }
   }, [searchParams]);
 
@@ -123,7 +121,6 @@ export default function ActivitiesPage() {
     setDeleteText("");
     if (selectedId === deleteTarget.uniqueId) {
       setSelectedId(null);
-      setEditTargetId(null);
     }
   };
 
@@ -229,13 +226,11 @@ export default function ActivitiesPage() {
                 className="entry-row-clickable"
                 onClick={() => {
                   setSelectedId(entry.uniqueId);
-                  setEditTargetId(null);
                 }}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") {
                     event.preventDefault();
                     setSelectedId(entry.uniqueId);
-                    setEditTargetId(null);
                   }
                 }}
                 tabIndex={0}
@@ -272,7 +267,6 @@ export default function ActivitiesPage() {
                       onClick={(event) => {
                         event.stopPropagation();
                         setSelectedId(entry.uniqueId);
-                        setEditTargetId(null);
                       }}
                       aria-label="Open details"
                     >
@@ -284,9 +278,7 @@ export default function ActivitiesPage() {
                           className="icon-btn"
                           onClick={(event) => {
                             event.stopPropagation();
-                            setSelectedId(entry.uniqueId);
-                            setEditTargetId(entry.uniqueId);
-                            notify("Warning: you are editing live submitted data.", "info");
+                            router.push(`/activities/new?edit=${encodeURIComponent(entry.uniqueId)}`);
                           }}
                           aria-label="Edit entry"
                         >
@@ -319,13 +311,11 @@ export default function ActivitiesPage() {
             className="entry-mobile-card"
             onClick={() => {
               setSelectedId(entry.uniqueId);
-              setEditTargetId(null);
             }}
             onKeyDown={(event) => {
               if (event.key === "Enter" || event.key === " ") {
                 event.preventDefault();
                 setSelectedId(entry.uniqueId);
-                setEditTargetId(null);
               }
             }}
             tabIndex={0}
@@ -358,7 +348,6 @@ export default function ActivitiesPage() {
                 onClick={(event) => {
                   event.stopPropagation();
                   setSelectedId(entry.uniqueId);
-                  setEditTargetId(null);
                 }}
               >
                 <i className="bi bi-eye" /> View
@@ -369,9 +358,7 @@ export default function ActivitiesPage() {
                     className="outline-btn flex-fill"
                     onClick={(event) => {
                       event.stopPropagation();
-                      setSelectedId(entry.uniqueId);
-                      setEditTargetId(entry.uniqueId);
-                      notify("Warning: you are editing live submitted data.", "info");
+                      router.push(`/activities/new?edit=${encodeURIComponent(entry.uniqueId)}`);
                     }}
                   >
                     <i className="bi bi-pencil-square" /> Edit
@@ -399,15 +386,8 @@ export default function ActivitiesPage() {
           entry={selectedEntry}
           onClose={() => {
             setSelectedId(null);
-            setEditTargetId(null);
           }}
           canManage={isAdmin}
-          initialEditMode={isAdmin && editTargetId === selectedEntry.uniqueId}
-          onUpdateEntry={(id, updates) => {
-            updateEntry(id, updates);
-            addAuditLog("Updated Entry", "My Activity", id, "Entry edited by admin");
-            notify(`Entry updated: ${id}`, "success");
-          }}
           onDeleteEntry={(id) => {
             deleteEntry(id);
             addAuditLog("Deleted Entry", "My Activity", id, "Entry deleted from preview dialog");
