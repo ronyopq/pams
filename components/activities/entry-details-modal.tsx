@@ -119,18 +119,20 @@ export const EntryDetailsModal = ({
     <div className="modal-overlay" role="dialog" aria-modal="true">
       <div className="entry-modal-card">
         <header className="entry-modal-head">
-          <div>
+          <div className="entry-head-main">
             <div className="d-flex gap-3 align-items-center mb-1">
               <span className="entry-id">{draft.uniqueId}</span>
               <StatusBadge status={draft.status} />
             </div>
-            <h3 className="modal-title mb-1">{draft.activityName}</h3>
+            <h3 className="modal-title mb-1 entry-modal-title" title={draft.activityName}>
+              {draft.activityName}
+            </h3>
             <p className="text-muted mb-0">
               {draft.project} - {draft.activityType}
             </p>
           </div>
 
-          <div className="d-flex gap-2 align-items-start flex-wrap justify-content-end">
+          <div className="entry-head-actions">
             <button className="outline-btn" onClick={() => exportEntryDocxReport(draft)}>
               <i className="bi bi-download" /> Export DOCX
             </button>
@@ -170,10 +172,10 @@ export const EntryDetailsModal = ({
                 <i className="bi bi-trash" /> Delete
               </button>
             )}
-            <button className="icon-btn" onClick={onClose} aria-label="Close details">
-              <i className="bi bi-x-lg" />
-            </button>
           </div>
+          <button className="icon-btn entry-head-close" onClick={onClose} aria-label="Close details">
+            <i className="bi bi-x-lg" />
+          </button>
         </header>
 
         {deletePanelOpen && (
@@ -482,13 +484,13 @@ export const EntryDetailsModal = ({
                             )}
                           </div>
                           <div className="entry-file-meta">
-                            <p className="mb-1 fw-semibold text-truncate" title={file.name}>
+                            <p className="mb-1 fw-semibold entry-file-name" title={file.name}>
                               {file.name}
                             </p>
                             <small className="text-muted d-block">{file.sizeKb} KB</small>
                             <small className="text-muted">{file.category}</small>
                           </div>
-                          <div className="d-flex gap-2 flex-wrap">
+                          <div className="entry-file-actions">
                             <button
                               className="outline-btn"
                               onClick={() => openAttachment(file)}

@@ -117,6 +117,17 @@ export const TopNav = () => {
           <button className="icon-btn" onClick={toggleTheme} aria-label="Toggle theme">
             <i className={`bi ${theme === "corporate-dark" ? "bi-brightness-high" : "bi-moon"}`} />
           </button>
+          <button
+            className="icon-btn mobile-logout-btn"
+            onClick={() => {
+              setMobileOpen(false);
+              logout();
+              router.push("/login");
+            }}
+            aria-label="Logout"
+          >
+            <i className="bi bi-box-arrow-right" />
+          </button>
         </div>
       </header>
 

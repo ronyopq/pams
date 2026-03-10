@@ -771,6 +771,46 @@ a {
   border-bottom: 1px solid var(--line);
 }
 
+.entry-modal-head {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  background: var(--surface);
+  padding-right: 3.8rem;
+}
+
+.entry-head-main {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.entry-modal-title {
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.entry-head-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-right: 0.2rem;
+}
+
+.entry-head-actions .outline-btn,
+.entry-head-actions .primary-btn,
+.entry-head-actions .danger-outline {
+  white-space: nowrap;
+}
+
+.entry-head-close {
+  position: absolute;
+  top: 0.82rem;
+  right: 0.88rem;
+  z-index: 9;
+}
+
 .entry-modal-footer {
   align-items: center;
   border-top: 1px solid var(--line);
@@ -919,6 +959,30 @@ a {
 
 .entry-file-meta {
   min-width: 0;
+}
+
+.entry-file-name {
+  margin: 0 0 0.2rem;
+  line-height: 1.26;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.entry-file-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.45rem;
+}
+
+.entry-file-actions .outline-btn,
+.entry-file-actions .primary-btn,
+.entry-file-actions .danger-outline {
+  width: 100%;
+  justify-content: center;
+  white-space: nowrap;
 }
 
 .file-type-icon-xl {
@@ -1084,6 +1148,38 @@ a {
   min-width: 0;
 }
 
+.file-library-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.55rem;
+}
+
+.file-library-title {
+  margin: 0 0 0.2rem;
+  line-height: 1.25;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.file-library-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.45rem;
+  margin-top: 0.75rem;
+}
+
+.file-library-actions .outline-btn,
+.file-library-actions .primary-btn,
+.file-library-actions .danger-outline {
+  width: 100%;
+  justify-content: center;
+  white-space: nowrap;
+}
+
 .file-type-icon-xxl {
   font-size: 4rem;
   color: var(--text-muted);
@@ -1091,6 +1187,22 @@ a {
 
 .file-preview-modal {
   width: min(900px, 100%);
+}
+
+.file-preview-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.55rem;
+}
+
+.file-preview-title {
+  line-height: 1.25;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .file-preview-stage {
@@ -1356,6 +1468,7 @@ a {
   align-items: center;
   gap: 0.42rem;
   min-width: 0;
+  flex: 1 1 auto;
 }
 
 .file-mini-thumb {
@@ -1388,17 +1501,32 @@ a {
 }
 
 .file-name-short {
+  display: block;
   font-size: 0.82rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 86px;
+  max-width: 100%;
 }
 
 .chip-close {
-  border: 0;
+  width: 28px;
+  height: 28px;
+  border: 1px solid transparent;
+  border-radius: 999px;
   background: transparent;
   color: var(--text-muted);
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease;
+}
+
+.chip-close:hover {
+  border-color: var(--line);
+  background: var(--surface-soft);
+  color: var(--danger);
 }
 
 .photo-upload-card {
@@ -1954,6 +2082,7 @@ a {
   padding: 0.85rem 0.75rem;
   overflow: auto;
   flex: 1;
+  min-height: 0;
   display: grid;
   align-content: start;
   gap: 0.35rem;
@@ -2063,6 +2192,11 @@ a {
 .mobile-overlay,
 .side-close {
   display: none;
+}
+
+.mobile-logout-btn {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 38%, var(--line));
 }
 
 .admin-layout-grid {
@@ -2297,6 +2431,7 @@ button.union-chip:hover {
     transition: transform 0.24s ease;
     width: min(84vw, 320px);
     max-width: 320px;
+    z-index: 260;
   }
 
   .side-nav.open {
@@ -2312,7 +2447,7 @@ button.union-chip:hover {
     top: 0;
     left: 0;
     right: 0;
-    z-index: 130;
+    z-index: 230;
     border-bottom: 1px solid var(--line);
     background: color-mix(in srgb, var(--surface) 96%, var(--bg-muted));
     padding: 0.6rem 0.75rem;
@@ -2332,7 +2467,7 @@ button.union-chip:hover {
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 140;
+    z-index: 230;
     border-top: 1px solid var(--line);
     background: color-mix(in srgb, var(--surface) 96%, var(--bg-muted));
     padding: 0.48rem 0.4rem 0.52rem;
@@ -2372,7 +2507,7 @@ button.union-chip:hover {
   .mobile-overlay {
     position: fixed;
     inset: 0;
-    z-index: 120;
+    z-index: 250;
     border: 0;
     width: 100%;
     background: rgba(2, 10, 20, 0.42);
@@ -2380,6 +2515,33 @@ button.union-chip:hover {
 
   .mobile-overlay.show {
     display: block;
+  }
+
+  .entry-modal-head {
+    flex-direction: column;
+    align-items: stretch;
+    padding-right: 1rem;
+  }
+
+  .entry-head-main {
+    padding-right: 2.7rem;
+  }
+
+  .entry-head-actions {
+    width: 100%;
+    margin-right: 0;
+  }
+
+  .entry-head-actions .outline-btn,
+  .entry-head-actions .primary-btn,
+  .entry-head-actions .danger-outline {
+    flex: 1 1 calc(50% - 0.4rem);
+    min-width: 130px;
+  }
+
+  .entry-head-close {
+    top: 0.62rem;
+    right: 0.62rem;
   }
 
   .page-actions {

@@ -73,9 +73,11 @@ export default function FilesPage() {
             </div>
 
             <div className="file-library-body">
-              <div className="d-flex justify-content-between align-items-start gap-2">
+              <div className="file-library-head">
                 <div className="min-w-0">
-                  <p className="mb-1 fw-semibold text-truncate">{file.name}</p>
+                  <p className="mb-1 fw-semibold file-library-title" title={file.name}>
+                    {file.name}
+                  </p>
                   <small className="text-muted d-block">{file.category}</small>
                   <small className="text-muted d-block">
                     {file.entryId} - {formatDate(file.date)}
@@ -87,7 +89,7 @@ export default function FilesPage() {
                 <span className="soft-badge">{Math.max(1, file.sizeKb)} KB</span>
               </div>
 
-              <div className="d-flex gap-2 mt-3 flex-wrap">
+              <div className="file-library-actions">
                 <button className="outline-btn" onClick={() => setPreviewFile(file)}>
                   <i className="bi bi-eye" /> Preview
                 </button>
@@ -121,9 +123,11 @@ export default function FilesPage() {
       {previewFile && (
         <div className="modal-overlay" role="dialog" aria-modal="true">
           <div className="panel-card file-preview-modal">
-            <div className="d-flex justify-content-between align-items-start gap-2 mb-3">
+            <div className="file-preview-head mb-3">
               <div className="min-w-0">
-                <h3 className="h5 mb-1 text-truncate">{previewFile.name}</h3>
+                <h3 className="h5 mb-1 file-preview-title" title={previewFile.name}>
+                  {previewFile.name}
+                </h3>
                 <p className="text-muted mb-0">
                   {previewFile.category} - {previewFile.entryId}
                 </p>
@@ -158,4 +162,3 @@ export default function FilesPage() {
     </div>
   );
 }
-
