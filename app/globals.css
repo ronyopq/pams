@@ -2025,6 +2025,18 @@ a {
   }
 }
 
+@keyframes mobile-cta-breathe {
+  0%,
+  100% {
+    box-shadow: 0 10px 22px color-mix(in srgb, var(--brand) 30%, transparent);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 14px 28px color-mix(in srgb, var(--brand) 38%, transparent);
+    transform: scale(1.04);
+  }
+}
+
 .side-nav {
   position: fixed;
   top: 0;
@@ -2109,11 +2121,30 @@ a {
   transition: transform 0.22s ease, border-color 0.22s ease, color 0.22s ease, background-color 0.22s ease;
 }
 
+.side-link::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(
+    110deg,
+    transparent 0%,
+    color-mix(in srgb, var(--brand-soft) 65%, transparent) 50%,
+    transparent 100%
+  );
+  transform: translateX(-125%);
+  transition: transform 0.38s ease;
+  pointer-events: none;
+}
+
 .side-link:hover {
   border-color: var(--line);
   background: var(--surface-soft);
   color: var(--text);
   transform: translateX(4px);
+}
+
+.side-link:hover::after {
+  transform: translateX(125%);
 }
 
 .side-link.active {
@@ -2213,34 +2244,6 @@ a {
 .side-mobile-logout {
   color: var(--danger);
   border-color: color-mix(in srgb, var(--danger) 40%, var(--line));
-}
-
-.side-mobile-new-wrap {
-  display: none;
-}
-
-.side-mobile-new-btn {
-  text-decoration: none;
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.28rem;
-  font-weight: 700;
-  color: var(--brand);
-}
-
-.side-mobile-new-circle {
-  width: 56px;
-  height: 56px;
-  border-radius: 999px;
-  border: 2px solid color-mix(in srgb, var(--surface) 90%, var(--line));
-  background: linear-gradient(135deg, var(--brand), var(--brand-strong));
-  color: #fff;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.2rem;
-  box-shadow: 0 12px 26px color-mix(in srgb, var(--brand) 34%, transparent);
 }
 
 .admin-layout-grid {
@@ -2463,7 +2466,7 @@ button.union-chip:hover {
 
   .corporate-main {
     margin-left: 0;
-    padding: 4.25rem 0.75rem 5.25rem;
+    padding: 4rem 0.7rem 4.7rem;
   }
 
   .app-content-wrap {
@@ -2473,9 +2476,16 @@ button.union-chip:hover {
   .side-nav {
     transform: translateX(-100%);
     transition: transform 0.24s ease;
-    width: min(84vw, 320px);
-    max-width: 320px;
-    z-index: 260;
+    top: calc(0.55rem + env(safe-area-inset-top, 0px));
+    bottom: calc(4.4rem + env(safe-area-inset-bottom, 0px));
+    left: 0.5rem;
+    width: min(80vw, 308px);
+    max-width: 308px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.2);
+    z-index: 245;
+    transform: translateX(-112%);
   }
 
   .side-nav.open {
@@ -2491,11 +2501,26 @@ button.union-chip:hover {
     display: inline-flex;
   }
 
-  .side-mobile-new-wrap {
-    display: flex;
-    justify-content: center;
-    padding: 0.2rem 0.75rem 0.5rem;
-    border-top: 1px dashed color-mix(in srgb, var(--line) 78%, transparent);
+  .side-brand {
+    padding: 0.72rem 0.78rem;
+  }
+
+  .side-menu {
+    padding: 0.68rem 0.62rem;
+    gap: 0.28rem;
+  }
+
+  .side-link {
+    padding: 0.5rem 0.62rem;
+  }
+
+  .side-footer {
+    padding: 0.6rem;
+    gap: 0.55rem;
+  }
+
+  .side-footer .side-profile {
+    display: none;
   }
 
   .mobile-topbar {
@@ -2526,10 +2551,10 @@ button.union-chip:hover {
     z-index: 230;
     border-top: 1px solid var(--line);
     background: color-mix(in srgb, var(--surface) 96%, var(--bg-muted));
-    padding: 0.76rem 0.4rem 0.62rem;
+    padding: 0.42rem 0.32rem calc(0.34rem + env(safe-area-inset-bottom, 0px));
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 0.26rem;
+    gap: 0.2rem;
     align-items: end;
   }
 
@@ -2538,29 +2563,31 @@ button.union-chip:hover {
     background: transparent;
     color: var(--text-muted);
     text-decoration: none;
-    font-size: 0.68rem;
+    font-size: 0.62rem;
     display: grid;
     place-items: center;
-    gap: 0.1rem;
-    padding: 0.26rem 0.2rem;
+    gap: 0.02rem;
+    padding: 0.16rem 0.12rem;
     border-radius: 12px;
     transition: transform 0.18s ease, background-color 0.18s ease, color 0.18s ease;
+    position: relative;
+    overflow: hidden;
   }
 
   .mobile-tab-new {
-    transform: translateY(-18px);
+    transform: translateY(-12px);
     place-self: center;
-    gap: 0.22rem;
+    gap: 0.1rem;
   }
 
   .mobile-tab-new:hover {
-    transform: translateY(-20px);
+    transform: translateY(-14px);
     background: transparent;
   }
 
   .mobile-tab-new-circle {
-    width: 62px;
-    height: 62px;
+    width: 54px;
+    height: 54px;
     border-radius: 999px;
     border: 2px solid color-mix(in srgb, var(--surface) 88%, var(--line));
     background: linear-gradient(135deg, var(--brand), var(--brand-strong));
@@ -2568,9 +2595,10 @@ button.union-chip:hover {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.3rem;
+    font-size: 1.15rem;
     box-shadow: 0 10px 22px color-mix(in srgb, var(--brand) 30%, transparent);
-    transition: transform 0.18s ease, box-shadow 0.18s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    animation: mobile-cta-breathe 2.4s ease-in-out infinite;
   }
 
   .mobile-tab-new.active {
@@ -2579,17 +2607,40 @@ button.union-chip:hover {
   }
 
   .mobile-tab-new.active .mobile-tab-new-circle {
-    transform: scale(1.04);
+    border-color: color-mix(in srgb, var(--brand) 45%, #ffffff);
     box-shadow: 0 14px 26px color-mix(in srgb, var(--brand) 36%, transparent);
   }
 
   .mobile-tab i {
-    font-size: 1rem;
+    font-size: 0.92rem;
   }
 
   .mobile-tab:hover {
     transform: translateY(-2px);
     background: color-mix(in srgb, var(--brand-soft) 55%, transparent);
+  }
+
+  .mobile-tab::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    background: linear-gradient(
+      120deg,
+      transparent 0%,
+      color-mix(in srgb, var(--brand-soft) 72%, transparent) 52%,
+      transparent 100%
+    );
+    transform: translateX(-130%);
+    transition: transform 0.35s ease;
+    pointer-events: none;
+  }
+
+  .mobile-tab:hover::after {
+    transform: translateX(130%);
+  }
+
+  .mobile-tab:active {
+    transform: scale(0.96);
   }
 
   .mobile-tab.active {
@@ -2600,7 +2651,7 @@ button.union-chip:hover {
   .mobile-overlay {
     position: fixed;
     inset: 0;
-    z-index: 250;
+    z-index: 240;
     border: 0;
     width: 100%;
     background: rgba(2, 10, 20, 0.42);
