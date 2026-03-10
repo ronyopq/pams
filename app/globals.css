@@ -772,9 +772,7 @@ a {
 }
 
 .entry-modal-head {
-  position: sticky;
-  top: 0;
-  z-index: 8;
+  position: static;
   background: var(--surface);
   padding-right: 3.8rem;
 }
