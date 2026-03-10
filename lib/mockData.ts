@@ -38,6 +38,8 @@ export const users: AppUser[] = [
     fullName: "Admin User",
     username: "admin",
     email: "admin@praan.org",
+    title: "System Administrator",
+    password: "123456",
     role: "Admin",
     active: true,
     projects: [
@@ -52,6 +54,8 @@ export const users: AppUser[] = [
     fullName: "Rahim Uddin",
     username: "rahim",
     email: "rahim@praan.org",
+    title: "Field Officer",
+    password: "123456",
     role: "User",
     active: true,
     projects: ["WASH Project", "Education for All"]
@@ -60,6 +64,8 @@ export const users: AppUser[] = [
     fullName: "Fatema Begum",
     username: "fatema",
     email: "fatema@praan.org",
+    title: "Program Manager",
+    password: "123456",
     role: "Manager",
     active: true,
     projects: [

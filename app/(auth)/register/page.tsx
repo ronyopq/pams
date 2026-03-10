@@ -35,7 +35,8 @@ export default function RegisterPage() {
       fullName: form.fullName,
       username: form.username,
       email: form.email,
-      project: form.project
+      project: form.project,
+      password: form.password
     });
 
     if (!result.ok) {

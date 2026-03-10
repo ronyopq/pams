@@ -46,6 +46,13 @@ export const EntryDetailsModal = ({
     setDeleteConfirmText("");
   }, [entry, initialEditMode]);
 
+  useEffect(() => {
+    document.body.classList.add("entry-modal-open");
+    return () => {
+      document.body.classList.remove("entry-modal-open");
+    };
+  }, []);
+
   const participantRows = useMemo(
     () => (editMode ? draft.participants : draft.participants.filter((line) => line.male + line.female > 0)),
     [draft.participants, editMode]

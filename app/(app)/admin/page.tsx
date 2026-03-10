@@ -10,6 +10,8 @@ type UserForm = {
   fullName: string;
   username: string;
   email: string;
+  title: string;
+  password: string;
   role: AppUser["role"];
   active: boolean;
   projects: string[];
@@ -55,7 +57,16 @@ const themeOptions: Array<{ value: ThemeMode; label: string }> = [
   { value: "mono", label: "Monochrome" }
 ];
 
-const emptyUser: UserForm = { fullName: "", username: "", email: "", role: "User", active: true, projects: [] };
+const emptyUser: UserForm = {
+  fullName: "",
+  username: "",
+  email: "",
+  title: "",
+  password: "123456",
+  role: "User",
+  active: true,
+  projects: []
+};
 
 const normalizeLocations = (items: LocationMap[]): LocationMap[] =>
   items
@@ -469,6 +480,8 @@ export default function AdminPage() {
       fullName: userForm.fullName.trim(),
       username: userForm.username.trim(),
       email: userForm.email.trim(),
+      title: userForm.title.trim() || "Field Officer",
+      password: userForm.password.trim() || "123456",
       role: userForm.role,
       active: userForm.active,
       projects: userForm.role === "Admin" ? projectNames : userForm.projects
@@ -870,15 +883,164 @@ export default function AdminPage() {
             <article className="panel-card settings-section">
               <h3 className="h5 mb-3">User Management</h3>
               <div className="row g-3">
-                <div className="col-md-4"><label className="form-label">Name</label><input className="form-control premium-input" value={userForm.fullName} onChange={(e) => setUserForm((p) => ({ ...p, fullName: e.target.value }))} /></div>
-                <div className="col-md-3"><label className="form-label">Username</label><input className="form-control premium-input" value={userForm.username} onChange={(e) => setUserForm((p) => ({ ...p, username: e.target.value }))} disabled={Boolean(editUser)} /></div>
-                <div className="col-md-5"><label className="form-label">Email</label><input className="form-control premium-input" value={userForm.email} onChange={(e) => setUserForm((p) => ({ ...p, email: e.target.value }))} /></div>
-                <div className="col-md-3"><label className="form-label">Role</label><select className="form-select premium-input" value={userForm.role} onChange={(e) => setUserForm((p) => ({ ...p, role: e.target.value as AppUser["role"] }))}><option>User</option><option>Manager</option><option>Admin</option></select></div>
-                <div className="col-md-3 d-flex align-items-end"><label className="confirm-box"><input type="checkbox" checked={userForm.active} onChange={(e) => setUserForm((p) => ({ ...p, active: e.target.checked }))} /><span>Active</span></label></div>
-                <div className="col-md-6 d-flex align-items-end"><button className="primary-btn w-100" onClick={upsertUser}>{editUser ? "Update User" : "Create User"}</button></div>
+                <div className="col-md-4">
+                  <label className="form-label">Name</label>
+                  <input
+                    className="form-control premium-input"
+                    value={userForm.fullName}
+                    onChange={(e) => setUserForm((p) => ({ ...p, fullName: e.target.value }))}
+                  />
+                </div>
+                <div className="col-md-3">
+                  <label className="form-label">Username</label>
+                  <input
+                    className="form-control premium-input"
+                    value={userForm.username}
+                    onChange={(e) => setUserForm((p) => ({ ...p, username: e.target.value }))}
+                    disabled={Boolean(editUser)}
+                  />
+                </div>
+                <div className="col-md-5">
+                  <label className="form-label">Email</label>
+                  <input
+                    className="form-control premium-input"
+                    value={userForm.email}
+                    onChange={(e) => setUserForm((p) => ({ ...p, email: e.target.value }))}
+                  />
+                </div>
+                <div className="col-md-4">
+                  <label className="form-label">Designation</label>
+                  <input
+                    className="form-control premium-input"
+                    value={userForm.title}
+                    onChange={(e) => setUserForm((p) => ({ ...p, title: e.target.value }))}
+                    placeholder="Field Officer / Manager / Coordinator"
+                  />
+                </div>
+                <div className="col-md-4">
+                  <label className="form-label">Password</label>
+                  <input
+                    type="text"
+                    className="form-control premium-input mono"
+                    value={userForm.password}
+                    onChange={(e) => setUserForm((p) => ({ ...p, password: e.target.value }))}
+                  />
+                </div>
+                <div className="col-md-4">
+                  <label className="form-label">Role</label>
+                  <select
+                    className="form-select premium-input"
+                    value={userForm.role}
+                    onChange={(e) => setUserForm((p) => ({ ...p, role: e.target.value as AppUser["role"] }))}
+                  >
+                    <option>User</option>
+                    <option>Manager</option>
+                    <option>Admin</option>
+                  </select>
+                </div>
+                <div className="col-md-4 d-flex align-items-end">
+                  <label className="confirm-box">
+                    <input
+                      type="checkbox"
+                      checked={userForm.active}
+                      onChange={(e) => setUserForm((p) => ({ ...p, active: e.target.checked }))}
+                    />
+                    <span>Active</span>
+                  </label>
+                </div>
+                <div className="col-md-8 d-flex align-items-end">
+                  <button className="primary-btn w-100" onClick={upsertUser}>
+                    {editUser ? "Update User" : "Create User"}
+                  </button>
+                </div>
               </div>
-              <div className="mt-3"><p className="small text-muted mb-2">Assign Projects (Admin = all projects)</p><div className="d-flex flex-wrap gap-3">{projectNames.map((p) => <label key={p} className="confirm-box"><input type="checkbox" checked={userForm.role === "Admin" || userForm.projects.includes(p)} onChange={() => setUserForm((prev) => ({ ...prev, projects: prev.projects.includes(p) ? prev.projects.filter((x) => x !== p) : [...prev.projects, p] }))} disabled={userForm.role === "Admin"} /><span>{p}</span></label>)}</div></div>
-              <div className="table-responsive mt-3"><table className="table premium-table mb-0"><thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Active</th><th>Projects</th><th /></tr></thead><tbody>{users.map((u) => <tr key={u.username}><td>{u.fullName}</td><td className="mono">{u.username}</td><td>{u.role}</td><td>{u.active ? "Yes" : "No"}</td><td>{u.role === "Admin" ? "All Projects" : u.projects.join(", ")}</td><td><div className="d-flex gap-2 justify-content-end"><button className="icon-btn" onClick={() => { setEditUser(u.username); setUserForm({ fullName: u.fullName, username: u.username, email: u.email, role: u.role, active: u.active, projects: u.role === "Admin" ? projectNames : u.projects }); }}><i className="bi bi-pencil" /></button><button className="icon-btn" onClick={() => setUsers((prev) => prev.map((x) => x.username === u.username ? { ...x, active: !x.active } : x))}><i className={`bi ${u.active ? "bi-toggle-on" : "bi-toggle-off"}`} /></button><button className="icon-btn" onClick={() => setUsers((prev) => prev.filter((x) => x.username !== u.username))}><i className="bi bi-trash" /></button></div></td></tr>)}</tbody></table></div>
+              <div className="mt-3">
+                <p className="small text-muted mb-2">Assign Projects (Admin = all projects)</p>
+                <div className="d-flex flex-wrap gap-3">
+                  {projectNames.map((p) => (
+                    <label key={p} className="confirm-box">
+                      <input
+                        type="checkbox"
+                        checked={userForm.role === "Admin" || userForm.projects.includes(p)}
+                        onChange={() =>
+                          setUserForm((prev) => ({
+                            ...prev,
+                            projects: prev.projects.includes(p)
+                              ? prev.projects.filter((x) => x !== p)
+                              : [...prev.projects, p]
+                          }))
+                        }
+                        disabled={userForm.role === "Admin"}
+                      />
+                      <span>{p}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="table-responsive mt-3">
+                <table className="table premium-table mb-0">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Username</th>
+                      <th>Email</th>
+                      <th>Designation</th>
+                      <th>Role</th>
+                      <th>Active</th>
+                      <th>Projects</th>
+                      <th />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.map((u) => (
+                      <tr key={u.username}>
+                        <td>{u.fullName}</td>
+                        <td className="mono">{u.username}</td>
+                        <td>{u.email}</td>
+                        <td>{u.title || "-"}</td>
+                        <td>{u.role}</td>
+                        <td>{u.active ? "Yes" : "No"}</td>
+                        <td>{u.role === "Admin" ? "All Projects" : u.projects.join(", ")}</td>
+                        <td>
+                          <div className="d-flex gap-2 justify-content-end">
+                            <button
+                              className="icon-btn"
+                              onClick={() => {
+                                setEditUser(u.username);
+                                setUserForm({
+                                  fullName: u.fullName,
+                                  username: u.username,
+                                  email: u.email,
+                                  title: u.title || "",
+                                  password: u.password || "123456",
+                                  role: u.role,
+                                  active: u.active,
+                                  projects: u.role === "Admin" ? projectNames : u.projects
+                                });
+                              }}
+                            >
+                              <i className="bi bi-pencil" />
+                            </button>
+                            <button
+                              className="icon-btn"
+                              onClick={() =>
+                                setUsers((prev) =>
+                                  prev.map((x) => (x.username === u.username ? { ...x, active: !x.active } : x))
+                                )
+                              }
+                            >
+                              <i className={`bi ${u.active ? "bi-toggle-on" : "bi-toggle-off"}`} />
+                            </button>
+                            <button className="icon-btn" onClick={() => setUsers((prev) => prev.filter((x) => x.username !== u.username))}>
+                              <i className="bi bi-trash" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
               <div className="mt-3"><button className="primary-btn" onClick={() => persistUsers()}>Save Users</button></div>
             </article>
           )}

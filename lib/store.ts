@@ -63,6 +63,15 @@ const cloneLocationMap = (map: LocationMap[]): LocationMap[] =>
 const cloneUsers = (list: AppUser[]): AppUser[] =>
   list.map((item) => ({
     ...item,
+    title:
+      typeof item.title === "string" && item.title.trim()
+        ? item.title
+        : item.role === "Admin"
+          ? "System Administrator"
+          : item.role === "Manager"
+            ? "Program Manager"
+            : "Field Officer",
+    password: typeof item.password === "string" && item.password ? item.password : "123456",
     projects: [...item.projects]
   }));
 

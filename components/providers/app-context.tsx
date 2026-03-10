@@ -42,6 +42,7 @@ type RegisterInput = {
   username: string;
   email: string;
   project: string;
+  password: string;
 };
 
 type PopupTone = "success" | "error" | "info";
@@ -114,6 +115,15 @@ const AppContext = createContext<AppContextValue | undefined>(undefined);
 const cloneUsers = (list: AppUser[]): AppUser[] =>
   list.map((item) => ({
     ...item,
+    title:
+      typeof item.title === "string" && item.title.trim()
+        ? item.title
+        : item.role === "Admin"
+          ? "System Administrator"
+          : item.role === "Manager"
+            ? "Program Manager"
+            : "Field Officer",
+    password: typeof item.password === "string" && item.password ? item.password : "123456",
     projects: [...item.projects]
   }));
 
@@ -158,6 +168,8 @@ const cloneReportSettings = (settings: ReportSettings): ReportSettings => ({
 const isSameUser = (a: AppUser, b: AppUser) =>
   a.fullName === b.fullName &&
   a.email === b.email &&
+  a.title === b.title &&
+  a.password === b.password &&
   a.role === b.role &&
   a.active === b.active &&
   a.projects.length === b.projects.length &&
@@ -353,7 +365,8 @@ export const AppContextProvider = ({ children }: { children: React.ReactNode }) 
     const found = users.find((item) => item.username.toLowerCase() === username.trim().toLowerCase());
     if (!found) return { ok: false, message: "User not found" };
     if (!found.active) return { ok: false, message: "Account is inactive" };
-    if (password !== "123456") return { ok: false, message: "Invalid password (demo: 123456)" };
+    const currentPassword = found.password || "123456";
+    if (password !== currentPassword) return { ok: false, message: "Invalid password" };
 
     const meta = getClientMeta();
     setLoginLogs((prev) => [
@@ -383,6 +396,8 @@ export const AppContextProvider = ({ children }: { children: React.ReactNode }) 
       fullName: input.fullName,
       username: input.username,
       email: input.email,
+      title: "Field Officer",
+      password: input.password || "123456",
       role: "User",
       active: true,
       projects: selectedProject ? [selectedProject] : []

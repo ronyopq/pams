@@ -68,7 +68,7 @@ export default function LoginPage() {
               placeholder="Enter password"
               required
             />
-            <small className="text-muted">Demo password: 123456</small>
+            <small className="text-muted">Use your account password.</small>
           </div>
 
           <button className="primary-btn w-100 login-submit-btn" disabled={loading}>

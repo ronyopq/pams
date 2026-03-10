@@ -12,6 +12,8 @@ export type AppUser = {
   fullName: string;
   username: string;
   email: string;
+  title: string;
+  password: string;
   role: Role;
   active: boolean;
   projects: string[];
