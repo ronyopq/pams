@@ -13,10 +13,12 @@ const isActivePath = (pathname: string, href: string) => {
   return pathname === routePath || pathname.startsWith(`${routePath}/`);
 };
 
-const mobileTabs = [
+const mobileTabsLeft = [
   { href: "/dashboard", label: "Home", icon: "bi-house" },
-  { href: "/activities/new", label: "New", icon: "bi-plus-circle" },
-  { href: "/activities", label: "My Activity", icon: "bi-clipboard-data" },
+  { href: "/activities", label: "My Activity", icon: "bi-clipboard-data" }
+];
+
+const mobileTabsRight = [
   { href: "/calendar", label: "Calendar", icon: "bi-calendar3" }
 ];
 
@@ -44,9 +46,25 @@ export const TopNav = () => {
               <span className="brand-sub">Activity Manager</span>
             </span>
           </Link>
-          <button className="icon-btn side-close" onClick={() => setMobileOpen(false)} aria-label="Close menu">
-            <i className="bi bi-x-lg" />
-          </button>
+          <div className="side-brand-actions">
+            <button className="icon-btn side-mobile-theme" onClick={toggleTheme} aria-label="Toggle theme">
+              <i className={`bi ${theme === "corporate-dark" ? "bi-brightness-high" : "bi-moon"}`} />
+            </button>
+            <button
+              className="icon-btn side-mobile-logout"
+              onClick={() => {
+                setMobileOpen(false);
+                logout();
+                router.push("/login");
+              }}
+              aria-label="Logout"
+            >
+              <i className="bi bi-box-arrow-right" />
+            </button>
+            <button className="icon-btn side-close" onClick={() => setMobileOpen(false)} aria-label="Close menu">
+              <i className="bi bi-x-lg" />
+            </button>
+          </div>
         </div>
 
         <nav className="side-menu" aria-label="Primary menu">
@@ -138,7 +156,24 @@ export const TopNav = () => {
       />
 
       <nav className="mobile-bottom-nav" aria-label="Mobile tab navigation">
-        {mobileTabs.map((tab) => (
+        {mobileTabsLeft.map((tab) => (
+          <Link key={tab.href} href={tab.href} onClick={() => setMobileOpen(false)} className={clsx("mobile-tab", isActivePath(pathname, tab.href) && "active")}>
+            <i className={`bi ${tab.icon}`} />
+            <span>{tab.label}</span>
+          </Link>
+        ))}
+        <Link
+          href="/activities/new"
+          onClick={() => setMobileOpen(false)}
+          className={clsx("mobile-tab mobile-tab-new", isActivePath(pathname, "/activities/new") && "active")}
+          aria-label="Open New Activity Form"
+        >
+          <span className="mobile-tab-new-circle">
+            <i className="bi bi-plus-lg" />
+          </span>
+          <span>New Form</span>
+        </Link>
+        {mobileTabsRight.map((tab) => (
           <Link key={tab.href} href={tab.href} onClick={() => setMobileOpen(false)} className={clsx("mobile-tab", isActivePath(pathname, tab.href) && "active")}>
             <i className={`bi ${tab.icon}`} />
             <span>{tab.label}</span>
