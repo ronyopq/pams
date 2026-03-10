@@ -82,6 +82,15 @@ export const TopNav = () => {
           ))}
         </nav>
 
+        <div className="side-mobile-new-wrap">
+          <Link href="/activities/new" onClick={() => setMobileOpen(false)} className="side-mobile-new-btn">
+            <span className="side-mobile-new-circle">
+              <i className="bi bi-plus-lg" />
+            </span>
+            <span>New Form</span>
+          </Link>
+        </div>
+
         <div className="side-footer">
           <div className="d-flex gap-2">
             <button className="icon-btn" onClick={toggleTheme} aria-label="Toggle theme">
